@@ -2,7 +2,7 @@
 
 <img src="docs/assets/banner.svg" alt="Google Classroom MCP para docentes" width="100%">
 
-# 🛠️ Guía de instalación
+# 🧭 Guía de instalación
 
 ⏱️ **20-30 minutos** la primera vez · 💻 Mac o Windows · 🆓 Gratuito
 
@@ -42,7 +42,7 @@ Debe mostrar `v22.x` o `v24.x`.
 > [!NOTE]
 > **Sin permisos de administrador (ordenadores del centro):** en la página de descargas de Node.js elige el archivo comprimido (`.tar.gz` en Mac, `.zip` en Windows), descomprímelo en tu carpeta de usuario y usa la ruta completa a `node` en los pasos siguientes (p. ej. `~/node/bin/node`).
 
-## 2. Descargar y preparar el servidor ⬇️
+## 2. Descargar y preparar el servidor 📥
 
 **Opción A — con git:**
 
@@ -62,7 +62,7 @@ npm run build
 
 Apunta la **ruta completa** de esa carpeta; la necesitarás en el paso 5. En Mac la ves con `pwd`; en Windows, con `cd`.
 
-## 3. Crear tu proyecto en Google Cloud ☁️
+## 3. Crear tu proyecto en Google Cloud 🌐
 
 Esto crea tu propia «aplicación» de Google, que es lo que permite que el servidor hable con tu Classroom. Es gratuito y no hace falta tarjeta.
 
