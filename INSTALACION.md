@@ -35,13 +35,13 @@ Debe mostrar `v22.x` o `v24.x`.
 **Opción A — con git:**
 
 ```bash
-git clone https://github.com/vTanco/google-classroom-mcp-docentes.git
-cd google-classroom-mcp-docentes
+git clone https://github.com/vTanco/google-classroom-mcp.git
+cd google-classroom-mcp
 npm ci --ignore-scripts
 npm run build
 ```
 
-**Opción B — sin git:** en la página del repositorio pulsa **Code → Download ZIP**, descomprímelo en una carpeta que no vayas a mover (p. ej. `Documentos/google-classroom-mcp-docentes`), abre una Terminal en esa carpeta y ejecuta:
+**Opción B — sin git:** en la página del repositorio pulsa **Code → Download ZIP**, descomprímelo en una carpeta que no vayas a mover (p. ej. `Documentos/google-classroom-mcp`; la carpeta del ZIP se llama `google-classroom-mcp-main`, puedes renombrarla), abre una Terminal en esa carpeta y ejecuta:
 
 ```bash
 npm ci --ignore-scripts
@@ -163,7 +163,7 @@ Añade dentro de `"mcpServers"` (si el archivo está vacío, copia el bloque ent
 }
 ```
 
-En Windows usa barras dobles: `"C:\\Users\\tu_usuario\\Documents\\google-classroom-mcp-docentes\\dist\\index.js"`.
+En Windows usa barras dobles: `"C:\\Users\\tu_usuario\\Documents\\google-classroom-mcp\\dist\\index.js"`.
 
 **Cierra Claude Desktop del todo** (Cmd+Q / salir desde la bandeja) y vuelve a abrirlo.
 
