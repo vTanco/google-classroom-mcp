@@ -12,13 +12,13 @@
 ![MCP](https://img.shields.io/badge/MCP-21%20herramientas-8A2BE2)
 ![Idioma](https://img.shields.io/badge/docs-espa%C3%B1ol-c60b1e)
 
-[**Instalación**](INSTALACION.md) · [Qué puede hacer](#-qué-puede-hacer) · [Ejemplos](#-ejemplos-de-uso) · [Límites](#-lo-que-no-hace) · [Privacidad](#-privacidad-y-seguridad) · [Problemas](INSTALACION.md#7-solución-de-problemas-)
+[**Instalación**](INSTALACION.md) · [Qué puede hacer](#qué-puede-hacer) · [Ejemplos](#ejemplos-de-uso) · [Límites](#lo-que-no-hace) · [Privacidad](#privacidad-y-seguridad) · [Problemas](INSTALACION.md#7-solución-de-problemas-)
 
 </div>
 
 ---
 
-## ✨ Así se usa
+## Así se usa
 
 Le hablas a Claude como a un compañero; él crea las publicaciones en tu Classroom.
 
@@ -28,7 +28,7 @@ Le hablas a Claude como a un compañero; él crea las publicaciones en tu Classr
 
 ```mermaid
 flowchart LR
-    T(["🧑‍🏫 Tú"]) -->|lenguaje natural| C["Claude<br/>Desktop o Code"]
+    T(["Tú"]) -->|lenguaje natural| C["Claude<br/>Desktop o Code"]
     C -->|MCP · local| S["Este servidor<br/>en tu ordenador"]
     S -->|tu permiso OAuth| G["Google Classroom"]
     S --> D["Google Drive / Slides"]
@@ -37,18 +37,18 @@ flowchart LR
 > [!NOTE]
 > Todo funciona **en tu ordenador** con **tu propia cuenta** y **tu propio proyecto de Google Cloud**. No hay servidores intermedios ni nadie más ve tus cursos.
 
-## 🧰 Qué puede hacer
+## Qué puede hacer
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-### 📚 Cursos y temas
+### Cursos y temas
 - Listar y buscar cursos por nombre o sección
 - Ver detalles, cambiar nombre/aula o archivar
 - Crear y renombrar temas
 
-### 📝 Tareas
+### Tareas
 - Tareas y preguntas de respuesta corta
 - Puntos, instrucciones, tema
 - **Fecha y hora de entrega en tu hora local**
@@ -56,12 +56,12 @@ flowchart LR
 </td>
 <td width="50%" valign="top">
 
-### 📎 Materiales y adjuntos
+### Materiales y adjuntos
 - Materiales sin entrega
 - Archivos de Drive, enlaces, YouTube y Forms
 - **Modo de cada archivo:** solo lectura, edición compartida o **copia para cada alumno**
 
-### 📣 Anuncios y publicación
+### Anuncios y publicación
 - Anuncios en el tablón
 - Todo en **borrador** por defecto
 - Publicación inmediata o **programada**
@@ -86,7 +86,7 @@ Adjuntos de Drive con `shareMode`: `VIEW` (por defecto), `EDIT` o `STUDENT_COPY`
 
 </details>
 
-## 💬 Ejemplos de uso
+## Ejemplos de uso
 
 | Quieres… | Pídeselo así |
 |---|---|
@@ -101,7 +101,7 @@ Adjuntos de Drive con `shareMode`: `VIEW` (por defecto), `EDIT` o `STUDENT_COPY`
 > [!TIP]
 > Con **Google Drive para escritorio** instalado, Claude encuentra tus archivos en el Mac/PC y los adjunta por su nombre sin que tengas que buscar enlaces.
 
-## 🚀 Instalación rápida
+## Instalación rápida
 
 > [!IMPORTANT]
 > Cada docente necesita **su propio `credentials.json`** de Google Cloud (gratuito). La [guía completa](INSTALACION.md) lo explica pantalla a pantalla, unos 20-30 minutos la primera vez.
@@ -144,24 +144,24 @@ En `claude_desktop_config.json` (Configuración → Desarrollador → Editar con
 
 </details>
 
-## 🚧 Lo que no hace
+## Lo que no hace
 
 | Límite | Motivo |
 |---|---|
-| ❌ No borra nada | A propósito: borrar se hace a mano en Classroom. |
-| ❌ No pone notas ni ve entregas | A propósito: fuera del alcance de los permisos. |
-| ❌ No crea preguntas tipo test | Usa un Google Form adjunto. |
-| ⚠️ No cambia adjuntos de algo ya publicado | Límite de la API de Classroom: hay que crear la publicación de nuevo. |
-| ⚠️ Solo edita lo que ha creado él | Límite de Google: lo creado a mano en Classroom no se puede modificar por API. |
+| No borra nada | A propósito: borrar se hace a mano en Classroom. |
+| No pone notas ni ve entregas | A propósito: fuera del alcance de los permisos. |
+| No crea preguntas tipo test | Usa un Google Form adjunto. |
+| No cambia adjuntos de algo ya publicado | Límite de la API de Classroom: hay que crear la publicación de nuevo. |
+| Solo edita lo que ha creado él | Límite de Google: lo creado a mano en Classroom no se puede modificar por API. |
 
-## 🔒 Privacidad y seguridad
+## Privacidad y seguridad
 
 - El servidor se ejecuta **en local** (stdio) y habla directamente con las APIs de Google.
 - `credentials.json` y `token.json` se quedan en tu ordenador y están en `.gitignore`. **No los compartas.**
 - **Permisos que pide:** cursos, tareas, materiales, temas y anuncios de Classroom; `drive.file` (archivos que sube la app) y `drive.readonly` (leer tus archivos para adjuntarlos).
 - Puedes retirar el acceso en cualquier momento en [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
 
-## 🛠️ Desarrollo
+## Desarrollo
 
 ```bash
 npm ci --ignore-scripts
@@ -171,7 +171,7 @@ npm run doctor   # comprueba credenciales con lecturas inocuas
 
 Tras cambiar el código: `npm run build` y reinicia Claude. Contribuciones bienvenidas: abre un *issue* o un *pull request*.
 
-## 🙏 Créditos
+## Créditos
 
 Fork de **[pengusto/google-classroom-mcp](https://github.com/pengusto/google-classroom-mcp)**, basado en el trabajo de Adrià Santacreu i Giménez. Licencia **MIT** ([LICENSE](LICENSE)). Documentación original en inglés: [docs/README-original.md](docs/README-original.md).
 
