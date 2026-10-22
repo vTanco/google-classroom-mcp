@@ -61,9 +61,10 @@ export class GoogleClassroomServer {
           return fail('Each updateMask field must be supplied exactly once. Use an empty string to clear a supported text field.');
         }
       }
-      if (args.dueTime && !args.dueDate) return fail('dueTime requires dueDate; both use UTC.');
+      if (args.dueTime && !args.dueDate) return fail('dueTime requires dueDate; both use local time.');
       if (patch && args.dueTime && !String(args.updateMask).split(',').includes('dueTime')) return fail('Include dueTime in updateMask when supplying it.');
       if (args.scheduledTime && args.state === 'PUBLISHED') return fail('Scheduled posts must be DRAFT.');
+      if ((args.attachments as any[] || []).some(a => a.shareMode && a.type !== 'driveFile')) return fail('shareMode only applies to driveFile attachments.');
       for (const attachment of (args.attachments as any[] || [])) {
         if (['link', 'form'].includes(attachment.type)) {
           try {
@@ -78,12 +79,12 @@ export class GoogleClassroomServer {
       }
       let apis;
       try { apis = await this.initApis(); }
-      catch { return fail('OAuth is unavailable. Run bun run auth and check credential/token file paths and permissions.'); }
+      catch { return fail('OAuth is unavailable. Run npm run auth and check credential/token file paths and permissions.'); }
       try {
         return await this.handleToolCall(apis.classroom, apis.drive, apis.slides, name, args);
       } catch (error: any) {
         const status = Number(error.response?.status || error.code);
-        const reason = status === 401 ? 'OAuth expired; run bun run auth.'
+        const reason = status === 401 ? 'OAuth expired; run npm run auth.'
           : status === 403 ? 'Access denied. Check scopes, course role and the Google project that created the post.'
           : status === 404 ? 'Resource not found or inaccessible.'
           : status === 400 ? 'Google rejected these arguments or this state change.'
@@ -98,7 +99,7 @@ export class GoogleClassroomServer {
   private mapAttachments(attachments: any[]) {
     return attachments.map(att => {
       switch (att.type) {
-        case 'driveFile':     return { driveFile: { driveFile: { id: att.idOrUrl } } };
+        case 'driveFile':     return { driveFile: { driveFile: { id: att.idOrUrl }, ...(att.shareMode ? { shareMode: att.shareMode } : {}) } };
         case 'link':          return { link: { url: att.idOrUrl } };
         case 'youtubeVideo':  return { youtubeVideo: { id: att.idOrUrl } };
         case 'form':          return { form: { formUrl: att.idOrUrl } };
@@ -112,9 +113,11 @@ export class GoogleClassroomServer {
     if (!dueDate) return {};
     const [year, month, day] = dueDate.split('-').map(Number);
     const [hours, minutes] = (dueTime || '23:59').split(':').map(Number);
+    // Classroom stores due dates in UTC; treat the given date/time as local time.
+    const due = new Date(year, month - 1, day, hours, minutes);
     return {
-      dueDate: { year, month, day },
-      dueTime: { hours, minutes, seconds: 0, nanos: 0 },
+      dueDate: { year: due.getUTCFullYear(), month: due.getUTCMonth() + 1, day: due.getUTCDate() },
+      dueTime: { hours: due.getUTCHours(), minutes: due.getUTCMinutes(), seconds: 0, nanos: 0 },
     };
   }
 
@@ -223,8 +226,8 @@ export class GoogleClassroomServer {
             state: { type: 'string', enum: ['PUBLISHED', 'DRAFT'], default: 'DRAFT' },
             scheduledTime: { type: 'string', description: 'RFC 3339 timestamp for scheduled publication' },
             maxPoints: { type: 'number' },
-            dueDate: { type: 'string', description: 'YYYY-MM-DD in UTC' },
-            dueTime: { type: 'string', description: 'HH:MM in UTC (defaults to 23:59 if dueDate is set)' },
+            dueDate: { type: 'string', description: 'YYYY-MM-DD in the local time zone of this computer' },
+            dueTime: { type: 'string', description: 'HH:MM in local time (defaults to 23:59 if dueDate is set); converted to UTC automatically' },
             topicId: { type: 'string' },
             attachments: {
               type: 'array',
@@ -233,6 +236,7 @@ export class GoogleClassroomServer {
                 properties: {
                   type: { type: 'string', enum: ['driveFile', 'link', 'youtubeVideo', 'form'] },
                   idOrUrl: { type: 'string' },
+                  shareMode: { type: 'string', enum: ['VIEW', 'EDIT', 'STUDENT_COPY'], description: 'Only for driveFile: VIEW (read-only, default), EDIT (one shared editable file) or STUDENT_COPY (each student gets a copy).' },
                 },
               },
             },
@@ -253,8 +257,8 @@ export class GoogleClassroomServer {
             description: { type: 'string' },
             maxPoints: { type: 'number' },
             topicId: { type: 'string' },
-            dueDate: { type: 'string', description: 'YYYY-MM-DD in UTC' },
-            dueTime: { type: 'string', description: 'HH:MM in UTC; requires dueDate' },
+            dueDate: { type: 'string', description: 'YYYY-MM-DD in the local time zone of this computer' },
+            dueTime: { type: 'string', description: 'HH:MM in local time; requires dueDate' },
             scheduledTime: { type: 'string', description: 'RFC 3339 timestamp for scheduled publication' },
             state: { type: 'string', enum: ['PUBLISHED', 'DRAFT'] },
           },
@@ -355,6 +359,7 @@ export class GoogleClassroomServer {
                 properties: {
                   type: { type: 'string', enum: ['driveFile', 'link', 'youtubeVideo', 'form'] },
                   idOrUrl: { type: 'string' },
+                  shareMode: { type: 'string', enum: ['VIEW', 'EDIT'], description: 'Only for driveFile: VIEW (read-only, default) or EDIT (shared editable file).' },
                 },
               },
             },

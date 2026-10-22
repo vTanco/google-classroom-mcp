@@ -122,3 +122,34 @@ test('API error details are redacted and writes are not retried', async t => {
   assert.match(result.content[0].text, /Verify the target before retrying/);
   assert.equal(writes, 1);
 });
+
+test('due dates are given in local time and stored in UTC', async t => {
+  let body;
+  const classroom = { courses: { courseWork: { create: async ({ requestBody }) => { body = requestBody; return { data: {} }; } } } };
+  const client = await connected(t, classroom);
+  data(await call(client, 'classroom_create_assignment', { courseId: 'c', title: 'x', dueDate: '2030-07-15', dueTime: '23:59' }));
+  const local = new Date(2030, 6, 15, 23, 59);
+  assert.deepEqual(body.dueDate, { year: local.getUTCFullYear(), month: local.getUTCMonth() + 1, day: local.getUTCDate() });
+  assert.deepEqual(body.dueTime, { hours: local.getUTCHours(), minutes: local.getUTCMinutes(), seconds: 0, nanos: 0 });
+});
+
+test('Drive attachments honour shareMode', async t => {
+  const bodies = [];
+  const create = async ({ requestBody }) => { bodies.push(requestBody); return { data: {} }; };
+  const classroom = { courses: { courseWork: { create }, courseWorkMaterials: { create } } };
+  const client = await connected(t, classroom);
+  data(await call(client, 'classroom_create_assignment', { courseId: 'c', title: 'x', attachments: [
+    { type: 'driveFile', idOrUrl: 'a', shareMode: 'STUDENT_COPY' },
+    { type: 'driveFile', idOrUrl: 'b', shareMode: 'EDIT' },
+    { type: 'driveFile', idOrUrl: 'c' },
+  ] }));
+  assert.deepEqual(bodies[0].materials.map(m => m.driveFile.shareMode), ['STUDENT_COPY', 'EDIT', undefined]);
+  data(await call(client, 'classroom_create_material', { courseId: 'c', title: 'x', attachments: [{ type: 'driveFile', idOrUrl: 'a', shareMode: 'EDIT' }] }));
+  assert.equal(bodies[1].materials[0].driveFile.shareMode, 'EDIT');
+  for (const attachments of [
+    [{ type: 'driveFile', idOrUrl: 'a', shareMode: 'STUDENT_COPY' }],
+    [{ type: 'link', idOrUrl: 'https://example.com', shareMode: 'EDIT' }],
+  ]) {
+    assert.equal((await call(client, 'classroom_create_material', { courseId: 'c', title: 'x', attachments })).isError, true);
+  }
+});

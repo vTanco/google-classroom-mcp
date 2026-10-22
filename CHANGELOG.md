@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-docentes (2026-10-22) — fork para docentes
+
+- Fork de [pengusto/google-classroom-mcp](https://github.com/pengusto/google-classroom-mcp) con documentación de instalación en español.
+- **Arreglo de autenticación:** `@google-cloud/local-auth` trae otra versión de `google-auth-library` y su cliente no enviaba credenciales (401 `CREDENTIALS_MISSING`) al verificar el acceso; ahora se guarda el token y se verifica con el cliente propio.
+- **Fechas de entrega en hora local:** `dueDate`/`dueTime` se interpretan en la zona horaria del ordenador y se convierten a UTC (antes «23:59» aparecía como 01:59 del día siguiente en España).
+- **Modo de los adjuntos de Drive:** nuevo campo `shareMode` (`VIEW`, `EDIT`, `STUDENT_COPY` en tareas; `VIEW`, `EDIT` en materiales).
+- Scripts con `npm` en lugar de `bun`; dependencias actualizadas (`npm audit`: 0 vulnerabilidades).
+
 ## Unreleased
 
 ### Breaking changes

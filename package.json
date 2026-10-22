@@ -1,7 +1,7 @@
 {
-  "name": "google-classroom-mcp",
+  "name": "google-classroom-mcp-docentes",
   "version": "3.0.0-beta.1",
-  "description": "Local Google Classroom MCP for course materials, assignments, scheduled posts and file attachments",
+  "description": "Servidor MCP de Google Classroom para docentes: tareas, materiales, temas, anuncios y adjuntos de Drive desde Claude",
   "type": "module",
   "bin": {
     "google-classroom-mcp": "./dist/index.js"
@@ -10,9 +10,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
-    "test": "bun run build && node --test tests/*.test.js",
-    "auth": "bun run build && node auth.js",
-    "doctor": "bun run build && node auth.js --check"
+    "test": "npm run build && node --test tests/*.test.js",
+    "auth": "npm run build && node auth.js",
+    "doctor": "npm run build && node auth.js --check"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
@@ -35,10 +35,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pengusto/google-classroom-mcp.git"
+    "url": "https://github.com/vTanco/google-classroom-mcp-docentes.git"
   },
   "private": true,
-  "packageManager": "bun@1.4.2",
   "engines": {
     "node": "^22.0.0 || ^24.0.0"
   }
