@@ -1,18 +1,14 @@
 ---
-name: Feature request
-about: Describe a teaching workflow the current tools cannot support
+name: 💡 Propuesta de mejora
+about: Sugiere una función útil para el trabajo docente
 title: ''
-labels: ''
+labels: enhancement
 assignees: ''
 ---
 
-**Teaching workflow**
-What are you trying to accomplish?
+**¿Qué te gustaría poder pedirle a Claude?**
+Ejemplo: «Crea la rúbrica de la tarea…»
 
-**Current limitation**
-Which existing tools did you try?
+**¿Para qué te serviría en clase?**
 
-**Smallest useful improvement**
-What observable result would solve this?
-
-Do not include student information, real course IDs or credentials.
+**¿Cómo lo haces ahora?**

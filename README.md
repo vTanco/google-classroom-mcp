@@ -1,74 +1,182 @@
-# Google Classroom MCP para docentes
+<div align="center">
 
-Conecta **Claude** (Claude Desktop o Claude Code) con **tu Google Classroom** para preparar y publicar tareas, materiales, temas y anuncios escribiendo en lenguaje normal:
+<img src="docs/assets/banner.svg" alt="Google Classroom MCP para docentes" width="100%">
 
-> «Crea en ESO 2º Tecnología una tarea "Práctica 05", 10 puntos, entrega el viernes a las 23:59, con la ficha de mi Drive como copia para cada alumno, en borrador.»
+<br>
 
-Funciona **en tu ordenador**, con **tu propia cuenta de Google** y tu propio permiso. Nadie más ve tus datos.
+**Conecta Claude con tu Google Classroom y prepara tus clases escribiendo en lenguaje normal.**
 
-**→ Guía de instalación paso a paso: [INSTALACION.md](INSTALACION.md)** (unos 20-30 minutos la primera vez).
+[![Checks](https://github.com/vTanco/google-classroom-mcp/actions/workflows/checks.yml/badge.svg)](https://github.com/vTanco/google-classroom-mcp/actions/workflows/checks.yml)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-yellow.svg)](LICENSE)
+![Node.js 22 | 24](https://img.shields.io/badge/Node.js-22%20%7C%2024-339933?logo=nodedotjs&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-21%20herramientas-8A2BE2)
+![Idioma](https://img.shields.io/badge/docs-espa%C3%B1ol-c60b1e)
+
+[**Instalación**](INSTALACION.md) · [Qué puede hacer](#-qué-puede-hacer) · [Ejemplos](#-ejemplos-de-uso) · [Límites](#-lo-que-no-hace) · [Privacidad](#-privacidad-y-seguridad) · [Problemas](INSTALACION.md#7-solución-de-problemas-)
+
+</div>
 
 ---
 
-## Qué puede hacer
+## ✨ Así se usa
+
+Le hablas a Claude como a un compañero; él crea las publicaciones en tu Classroom.
+
+> **Tú:** Crea en *ESO 2º Tecnología* las prácticas 2 a 18, cada una con su ficha de Drive como **copia para cada alumno**, 100 puntos, entrega el día de su sesión (martes, jueves y viernes) a las 23:59. En borrador.
+>
+> **Claude:** Hecho: 17 tareas en borrador en el tema *Sistemas IoT*. P02 vence el mar 20 oct, … P18 el jue 26 nov. Revísalas en *Trabajo de clase* y publícalas cuando quieras.
+
+```mermaid
+flowchart LR
+    T(["🧑‍🏫 Tú"]) -->|lenguaje natural| C["Claude<br/>Desktop o Code"]
+    C -->|MCP · local| S["Este servidor<br/>en tu ordenador"]
+    S -->|tu permiso OAuth| G["Google Classroom"]
+    S --> D["Google Drive / Slides"]
+```
+
+> [!NOTE]
+> Todo funciona **en tu ordenador** con **tu propia cuenta** y **tu propio proyecto de Google Cloud**. No hay servidores intermedios ni nadie más ve tus cursos.
+
+## 🧰 Qué puede hacer
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 📚 Cursos y temas
+- Listar y buscar cursos por nombre o sección
+- Ver detalles, cambiar nombre/aula o archivar
+- Crear y renombrar temas
+
+### 📝 Tareas
+- Tareas y preguntas de respuesta corta
+- Puntos, instrucciones, tema
+- **Fecha y hora de entrega en tu hora local**
+
+</td>
+<td width="50%" valign="top">
+
+### 📎 Materiales y adjuntos
+- Materiales sin entrega
+- Archivos de Drive, enlaces, YouTube y Forms
+- **Modo de cada archivo:** solo lectura, edición compartida o **copia para cada alumno**
+
+### 📣 Anuncios y publicación
+- Anuncios en el tablón
+- Todo en **borrador** por defecto
+- Publicación inmediata o **programada**
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary><b>Ver las 21 herramientas</b></summary>
 
 | Área | Herramientas |
 |---|---|
-| **Cursos** | Listar y buscar cursos, ver detalles, cambiar nombre/sección/aula o archivar |
-| **Temas** | Listar, crear y renombrar temas |
-| **Tareas** | Crear (tarea o pregunta de respuesta corta), consultar y editar: título, instrucciones, puntos, fecha y hora de entrega, tema |
-| **Materiales** | Crear, consultar y editar materiales sin entrega |
-| **Anuncios** | Publicar, programar y editar anuncios del tablón |
-| **Adjuntos** | Archivos de Drive, enlaces, vídeos de YouTube y Google Forms |
-| **Modo de los archivos de Drive** | `VIEW` (solo lectura), `EDIT` (un archivo compartido que edita toda la clase) o `STUDENT_COPY` (copia para cada alumno, solo en tareas) |
-| **Programar** | Dejar publicaciones programadas para una fecha y hora |
-| **Drive** | Subir archivos de hasta 5 MB |
+| Cursos | `classroom_list_courses`, `classroom_search_courses`, `classroom_get_course`, `classroom_update_course` |
+| Temas | `classroom_list_topics`, `classroom_get_topic`, `classroom_create_topic`, `classroom_patch_topic` |
+| Tareas | `classroom_list_assignments`, `classroom_get_assignment`, `classroom_create_assignment`, `classroom_patch_assignment` |
+| Materiales | `classroom_list_materials`, `classroom_get_material`, `classroom_create_material`, `classroom_patch_material` |
+| Anuncios | `classroom_list_announcements`, `classroom_post_announcement`, `classroom_patch_announcement` |
+| Drive / Slides | `drive_upload_file` (hasta 5 MB), `slides_get_presentation` |
 
-- Todo se crea **en borrador** salvo que pidas publicarlo.
-- Las **fechas y horas** se escriben en tu hora local (p. ej. 23:59 en España) y se guardan bien en Classroom.
+Adjuntos de Drive con `shareMode`: `VIEW` (por defecto), `EDIT` o `STUDENT_COPY` (solo en tareas).
 
-## Qué NO puede hacer (a propósito o por límites de Google)
+</details>
 
-- **No borra nada** (ni cursos, ni tareas, ni materiales): eso lo haces tú en Classroom.
-- **No pone notas** ni ve las entregas del alumnado; no gestiona alumnos ni tutores.
-- **No crea preguntas tipo test** (usa un Google Form adjunto).
-- **No puede cambiar los adjuntos de algo ya publicado** (límite de la API de Classroom): hay que crear la publicación de nuevo.
-- **Solo puede editar lo que él mismo ha creado** (límite de Google: una tarea creada a mano en Classroom no se puede modificar desde aquí).
+## 💬 Ejemplos de uso
 
-## Requisitos
+| Quieres… | Pídeselo así |
+|---|---|
+| Ver tus clases | «Lista mis cursos activos de Classroom.» |
+| Organizar una unidad | «Crea el tema *Unidad 3: Electricidad* en los tres grupos de 1º.» |
+| Subir material | «Sube el PDF *Vocabulario.pdf* de mi Drive como material en el tema *STRUCTURES* de cada grupo pluri.» |
+| Fichas individuales | «Crea la tarea *Práctica 05*, 10 puntos, con la ficha como **copia para cada alumno**, entrega el viernes.» |
+| Trabajo colaborativo | «Adjunta el documento de la actividad en **edición compartida** para toda la clase.» |
+| Avisar a la clase | «Programa un anuncio para el lunes a las 8:00 recordando la entrega del proyecto.» |
+| Corregir fechas | «Retrasa una sesión las entregas de las prácticas 8 a 18.» |
 
-- Una cuenta de Google con **acceso de profesor** en Classroom (cuentas educativas incluidas).
-- **Node.js 22 o 24**.
-- **Claude Desktop** o **Claude Code**.
-- Crear **tu propio proyecto en Google Cloud** (gratuito) para obtener tu `credentials.json`. La guía lo explica paso a paso.
+> [!TIP]
+> Con **Google Drive para escritorio** instalado, Claude encuentra tus archivos en el Mac/PC y los adjunta por su nombre sin que tengas que buscar enlaces.
 
-> Si tu cuenta es de un centro educativo, el administrador de Google Workspace puede tener bloqueadas las aplicaciones externas. Ver «Solución de problemas» en la guía.
+## 🚀 Instalación rápida
 
-## Privacidad y seguridad
+> [!IMPORTANT]
+> Cada docente necesita **su propio `credentials.json`** de Google Cloud (gratuito). La [guía completa](INSTALACION.md) lo explica pantalla a pantalla, unos 20-30 minutos la primera vez.
 
-- El servidor se ejecuta **en local** (stdio) y habla directamente con las APIs de Google; no hay servidores intermedios.
-- `credentials.json` (tu aplicación de Google Cloud) y `token.json` (tu permiso) se quedan en tu ordenador y están en `.gitignore`. **No los compartas ni los subas a ningún sitio**: cada docente debe crear los suyos.
-- Permisos que pide: cursos, tareas del alumnado, materiales, temas y anuncios de Classroom; `drive.file` (archivos que sube la app) y `drive.readonly` (leer tus archivos de Drive para adjuntarlos).
-- Puedes retirar el acceso cuando quieras en <https://myaccount.google.com/permissions>.
+```bash
+git clone https://github.com/vTanco/google-classroom-mcp.git
+cd google-classroom-mcp
+npm ci --ignore-scripts && npm run build
+# copia aquí tu credentials.json (ver INSTALACION.md, paso 3)
+npm run auth      # elige tu cuenta de Classroom en el navegador
+npm run doctor    # comprueba que todo responde
+```
 
-## Desarrollo
+Y conéctalo a Claude:
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+```bash
+claude mcp add google-classroom --scope user -- /ruta/a/node /ruta/a/google-classroom-mcp/dist/index.js
+```
+
+</details>
+
+<details>
+<summary><b>Claude Desktop</b></summary>
+
+En `claude_desktop_config.json` (Configuración → Desarrollador → Editar configuración):
+
+```json
+{
+  "mcpServers": {
+    "google-classroom": {
+      "command": "/ruta/a/node",
+      "args": ["/ruta/a/google-classroom-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+</details>
+
+## 🚧 Lo que no hace
+
+| Límite | Motivo |
+|---|---|
+| ❌ No borra nada | A propósito: borrar se hace a mano en Classroom. |
+| ❌ No pone notas ni ve entregas | A propósito: fuera del alcance de los permisos. |
+| ❌ No crea preguntas tipo test | Usa un Google Form adjunto. |
+| ⚠️ No cambia adjuntos de algo ya publicado | Límite de la API de Classroom: hay que crear la publicación de nuevo. |
+| ⚠️ Solo edita lo que ha creado él | Límite de Google: lo creado a mano en Classroom no se puede modificar por API. |
+
+## 🔒 Privacidad y seguridad
+
+- El servidor se ejecuta **en local** (stdio) y habla directamente con las APIs de Google.
+- `credentials.json` y `token.json` se quedan en tu ordenador y están en `.gitignore`. **No los compartas.**
+- **Permisos que pide:** cursos, tareas, materiales, temas y anuncios de Classroom; `drive.file` (archivos que sube la app) y `drive.readonly` (leer tus archivos para adjuntarlos).
+- Puedes retirar el acceso en cualquier momento en [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
+
+## 🛠️ Desarrollo
 
 ```bash
 npm ci --ignore-scripts
-npm test            # compila y ejecuta los 18 tests (sin conexión a Google)
-npm run doctor      # comprueba credenciales y permisos con lecturas inocuas
+npm test         # compila y ejecuta los tests (sin conexión a Google)
+npm run doctor   # comprueba credenciales con lecturas inocuas
 ```
 
-Tras cambiar el código: `npm run build` y reinicia Claude.
+Tras cambiar el código: `npm run build` y reinicia Claude. Contribuciones bienvenidas: abre un *issue* o un *pull request*.
 
-## Créditos y licencia
+## 🙏 Créditos
 
-Fork de **[pengusto/google-classroom-mcp](https://github.com/pengusto/google-classroom-mcp)** (basado en el trabajo de Adrià Santacreu i Giménez), con licencia **MIT** ([LICENSE](LICENSE)). La documentación original en inglés está en [docs/README-original.md](docs/README-original.md).
+Fork de **[pengusto/google-classroom-mcp](https://github.com/pengusto/google-classroom-mcp)**, basado en el trabajo de Adrià Santacreu i Giménez. Licencia **MIT** ([LICENSE](LICENSE)). Documentación original en inglés: [docs/README-original.md](docs/README-original.md).
 
-Cambios de este fork (ver [CHANGELOG.md](CHANGELOG.md)):
-- Arreglo de la autenticación (el permiso no se verificaba por un conflicto de versiones).
-- Fechas de entrega en hora local, convertidas a UTC.
-- Modo de los adjuntos de Drive (`shareMode`).
-- Scripts con `npm`, dependencias actualizadas y guía en español.
+**Novedades de este fork** ([CHANGELOG](CHANGELOG.md)): arreglo de la autenticación, fechas de entrega en hora local, modo de los adjuntos (`shareMode`), scripts con `npm`, dependencias actualizadas y guía en español.
 
-Proyecto no oficial; no está afiliado a Google.
+<div align="center">
+<sub>Proyecto no oficial, sin afiliación con Google ni Anthropic. Hecho por y para docentes.</sub>
+</div>

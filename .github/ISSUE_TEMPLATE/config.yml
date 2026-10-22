@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🩺 Solución de problemas de instalación
+    url: https://github.com/vTanco/google-classroom-mcp/blob/main/INSTALACION.md#7-soluci%C3%B3n-de-problemas-
+    about: Antes de abrir un issue, revisa los errores más comunes (org_internal, permisos, caducidad a los 7 días…)

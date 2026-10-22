@@ -1,21 +1,32 @@
-# Guía de instalación
+<div align="center">
 
-Tiempo estimado: **20-30 minutos** la primera vez. Solo hace falta hacerlo una vez por ordenador.
+<img src="docs/assets/banner.svg" alt="Google Classroom MCP para docentes" width="100%">
 
-Pasos:
-1. [Instalar Node.js](#1-instalar-nodejs)
-2. [Descargar y preparar el servidor](#2-descargar-y-preparar-el-servidor)
-3. [Crear tu proyecto en Google Cloud y tu `credentials.json`](#3-crear-tu-proyecto-en-google-cloud)
-4. [Autorizar tu cuenta de Google](#4-autorizar-tu-cuenta-de-google)
-5. [Conectarlo a Claude](#5-conectarlo-a-claude)
-6. [Primera prueba](#6-primera-prueba)
-7. [Solución de problemas](#7-solución-de-problemas)
+# 🛠️ Guía de instalación
 
-> **Consejo:** si usas Claude Code, puedes pegarle esta guía y pedirle que haga contigo los pasos 1, 2, 4 y 5. El paso 3 (Google Cloud) y elegir tu cuenta en el navegador tienes que hacerlos tú.
+⏱️ **20-30 minutos** la primera vez · 💻 Mac o Windows · 🆓 Gratuito
+
+[← Volver al README](README.md)
+
+</div>
 
 ---
 
-## 1. Instalar Node.js
+Pasos:
+1. [Instalar Node.js](#1-instalar-nodejs-)
+2. [Descargar y preparar el servidor](#2-descargar-y-preparar-el-servidor-)
+3. [Crear tu proyecto en Google Cloud y tu `credentials.json`](#3-crear-tu-proyecto-en-google-cloud-)
+4. [Autorizar tu cuenta de Google](#4-autorizar-tu-cuenta-de-google-)
+5. [Conectarlo a Claude](#5-conectarlo-a-claude-)
+6. [Primera prueba](#6-primera-prueba-)
+7. [Solución de problemas](#7-solución-de-problemas-)
+
+> [!TIP]
+> Si usas Claude Code, puedes pegarle esta guía y pedirle que haga contigo los pasos 1, 2, 4 y 5. El paso 3 (Google Cloud) y elegir tu cuenta en el navegador tienes que hacerlos tú.
+
+---
+
+## 1. Instalar Node.js 📦
 
 Necesitas **Node.js 22 o 24**.
 
@@ -28,9 +39,10 @@ node -v
 
 Debe mostrar `v22.x` o `v24.x`.
 
+> [!NOTE]
 > **Sin permisos de administrador (ordenadores del centro):** en la página de descargas de Node.js elige el archivo comprimido (`.tar.gz` en Mac, `.zip` en Windows), descomprímelo en tu carpeta de usuario y usa la ruta completa a `node` en los pasos siguientes (p. ej. `~/node/bin/node`).
 
-## 2. Descargar y preparar el servidor
+## 2. Descargar y preparar el servidor ⬇️
 
 **Opción A — con git:**
 
@@ -50,10 +62,11 @@ npm run build
 
 Apunta la **ruta completa** de esa carpeta; la necesitarás en el paso 5. En Mac la ves con `pwd`; en Windows, con `cd`.
 
-## 3. Crear tu proyecto en Google Cloud
+## 3. Crear tu proyecto en Google Cloud ☁️
 
 Esto crea tu propia «aplicación» de Google, que es lo que permite que el servidor hable con tu Classroom. Es gratuito y no hace falta tarjeta.
 
+> [!IMPORTANT]
 > Hazlo **con la misma cuenta de Google que usas en Classroom**. Si tienes varias cuentas abiertas, usa una **ventana de incógnito** e inicia sesión solo con esa.
 
 ### 3.1 Crear el proyecto
@@ -61,6 +74,7 @@ Esto crea tu propia «aplicación» de Google, que es lo que permite que el serv
 2. Arriba a la izquierda, en el **selector de proyectos**, pulsa **Nuevo proyecto**.
 3. Nombre: `Classroom MCP` → **Crear**. Comprueba que queda seleccionado arriba.
 
+> [!NOTE]
 > Puedes ignorar el aviso de «prueba gratuita de 300 $»: estas APIs son gratuitas.
 
 ### 3.2 Activar las APIs
@@ -78,7 +92,8 @@ Menú ☰ → **APIs y servicios → Biblioteca**. Busca y pulsa **Habilitar** e
 4. Correo de contacto → acepta la política → **Crear**.
 5. **Solo si elegiste Externo:** ve a **Público**, deja el estado en **Prueba** (no elijas «En producción») y en **Usuarios de prueba → Add users** añade tu propio correo.
 
-> **Importante:** si más adelante al autorizar te sale `Error 403: org_internal` aunque tu cuenta sea del mismo centro, ve a **Público → Marcar como externo → Prueba**. Ver [Solución de problemas](#7-solución-de-problemas).
+> [!WARNING]
+> Si más adelante al autorizar te sale `Error 403: org_internal` aunque tu cuenta sea del mismo centro, ve a **Público → Marcar como externo → Prueba**. Ver [Solución de problemas](#7-solución-de-problemas-).
 
 ### 3.4 Crear las credenciales (`credentials.json`)
 1. **Google Auth Platform → Clientes → + Crear cliente**.
@@ -97,9 +112,10 @@ Windows (PowerShell):
 Move-Item $HOME\Downloads\client_secret_*.json C:\RUTA\DEL\SERVIDOR\credentials.json
 ```
 
+> [!CAUTION]
 > `credentials.json` es **tuyo**: no lo compartas. Cada docente debe crear el suyo.
 
-## 4. Autorizar tu cuenta de Google
+## 4. Autorizar tu cuenta de Google 🔑
 
 En la carpeta del servidor:
 
@@ -128,9 +144,10 @@ npm run doctor
 
 Debe mostrar `Classroom API: OK` y `Drive API: OK`.
 
+> [!WARNING]
 > **No ejecutes `npm run auth` varias veces a la vez** (por ejemplo en varias pestañas): Google se lía y da error 500. Si te equivocas, cierra todas con `Ctrl + C` y lánzalo una sola vez.
 
-## 5. Conectarlo a Claude
+## 5. Conectarlo a Claude 🔌
 
 Necesitas dos rutas completas:
 - **Node:** en Mac `which node`, en Windows `where node` (p. ej. `/usr/local/bin/node` o `C:\Program Files\nodejs\node.exe`).
@@ -167,7 +184,7 @@ En Windows usa barras dobles: `"C:\\Users\\tu_usuario\\Documents\\google-classro
 
 **Cierra Claude Desktop del todo** (Cmd+Q / salir desde la bandeja) y vuelve a abrirlo.
 
-## 6. Primera prueba
+## 6. Primera prueba ✅
 
 En una conversación nueva, empieza por algo que solo lee:
 
@@ -186,7 +203,7 @@ Míralo en Classroom (pestaña **Trabajo de clase**): estará en **borrador**, s
 - «Programa un anuncio para el lunes a las 8:00 recordando la entrega del proyecto.»
 - «Adjunta el documento de la actividad en **edición compartida** para que toda la clase trabaje en el mismo archivo.»
 
-## 7. Solución de problemas
+## 7. Solución de problemas 🩺
 
 | Problema | Causa y solución |
 |---|---|
