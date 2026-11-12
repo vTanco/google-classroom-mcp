@@ -8,7 +8,12 @@
 - **Modo de los adjuntos de Drive:** nuevo campo `shareMode` (`VIEW`, `EDIT`, `STUDENT_COPY` en tareas; `VIEW`, `EDIT` en materiales).
 - Scripts con `npm` en lugar de `bun`; dependencias actualizadas (`npm audit`: 0 vulnerabilidades).
 
-## Unreleased
+## 3.0.1 (2026-11-12)
+
+- `npx -y google-classroom-mcp-docentes` arranca el servidor: el paquete expone un comando con su propio nombre (en 3.0.0 npx no sabía cuál de los dos comandos ejecutar).
+- El servidor informa de la versión real del paquete (antes decía siempre `3.0.0-beta.1`).
+
+## 3.0.0 (2026-11-12)
 
 ### Packaging
 

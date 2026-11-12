@@ -16,6 +16,7 @@ import { fileURLToPath } from 'url';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 const __filename = fileURLToPath(import.meta.url);
+const packageVersion: string = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 
 export class GoogleClassroomServer {
@@ -26,7 +27,7 @@ export class GoogleClassroomServer {
 
   constructor() {
     this.server = new Server(
-      { name: 'google-classroom-mcp', version: '3.0.0-beta.1' },
+      { name: 'google-classroom-mcp', version: packageVersion },
       { capabilities: { tools: {} } }
     );
     this.setupHandlers();
