@@ -10,13 +10,14 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
+const packageVersion = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 export class GoogleClassroomServer {
     server;
     classroom;
     drive;
     slides;
     constructor() {
-        this.server = new Server({ name: 'google-classroom-mcp', version: '3.0.0-beta.1' }, { capabilities: { tools: {} } });
+        this.server = new Server({ name: 'google-classroom-mcp', version: packageVersion }, { capabilities: { tools: {} } });
         this.setupHandlers();
     }
     async initApis() {

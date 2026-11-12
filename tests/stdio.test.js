@@ -12,6 +12,7 @@ test('stdio starts outside checkout and exposes tools without credentials', asyn
   await client.connect(transport);
   t.after(() => client.close());
   assert.equal((await client.listTools()).tools.length, 21);
+  assert.equal(client.getServerVersion().version, JSON.parse(fs.readFileSync('package.json', 'utf8')).version);
   const response = await client.callTool({ name: 'classroom_list_courses', arguments: { pageSize: 1 } });
   assert.equal(response.isError, true);
   assert.match(response.content[0].text, /OAuth is unavailable/);
@@ -27,4 +28,9 @@ test('stdio starts when launched through a symlink, as npm bins and npx do', asy
   await client.connect(transport);
   t.after(async () => { await client.close(); fs.rmSync(dir, { recursive: true, force: true }); });
   assert.equal((await client.listTools()).tools.length, 21);
+});
+
+test('npx can resolve the server from the package name alone', () => {
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  assert.equal(pkg.bin[pkg.name], 'dist/index.js');
 });
