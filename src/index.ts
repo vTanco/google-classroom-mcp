@@ -10,6 +10,7 @@ import { google, classroom_v1, drive_v3, slides_v1 } from 'googleapis';
 import { loadAuthClient } from './auth.js';
 import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
 import { Readable } from 'stream';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
@@ -760,7 +761,9 @@ export class GoogleClassroomServer {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+// npm runs bins through a symlink (node_modules/.bin, npx), so compare real paths.
+const realEntry = (file: string): string => { try { return fs.realpathSync(file); } catch { return path.resolve(file); } };
+if (process.argv[1] && realEntry(process.argv[1]) === realEntry(__filename)) {
   new GoogleClassroomServer().run().catch(() => {
     console.error('MCP startup failed.');
     process.exitCode = 1;

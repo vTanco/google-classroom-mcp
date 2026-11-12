@@ -115,6 +115,19 @@ npm run auth      # elige tu cuenta de Classroom en el navegador
 npm run doctor    # comprueba que todo responde
 ```
 
+### Opción sin clonar: desde npm
+
+Con Node.js 22 o 24 instalado. Los archivos de Google se guardan en `~/.config/google-classroom-mcp-docentes/` (cámbialo con `GOOGLE_CLASSROOM_MCP_HOME`).
+
+```bash
+mkdir -p ~/.config/google-classroom-mcp-docentes
+mv ~/Downloads/client_secret_*.json ~/.config/google-classroom-mcp-docentes/credentials.json
+npx -y -p google-classroom-mcp-docentes google-classroom-mcp-auth           # elige tu cuenta en el navegador
+claude mcp add google-classroom --scope user -- npx -y google-classroom-mcp-docentes
+```
+
+En Claude Desktop usa `"command": "npx"` y `"args": ["-y", "google-classroom-mcp-docentes"]`.
+
 Y conéctalo a Claude:
 
 <details>

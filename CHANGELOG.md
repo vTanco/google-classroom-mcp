@@ -10,6 +10,11 @@
 
 ## Unreleased
 
+### Packaging
+
+- Publicable en npm como `google-classroom-mcp-docentes` (`npx -y google-classroom-mcp-docentes`), con el comando `google-classroom-mcp-auth` para autorizar.
+- Sin `credentials.json` en la raíz del proyecto, los archivos OAuth se guardan en `~/.config/google-classroom-mcp-docentes/` (`GOOGLE_CLASSROOM_MCP_HOME` para cambiarlo); las instalaciones clonadas siguen igual.
+
 ### Breaking changes
 
 - Return bounded `{items, nextPageToken}` pages from list and course-search tools instead of arrays. Clients must follow continuation tokens.
