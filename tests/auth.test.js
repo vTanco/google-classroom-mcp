@@ -57,3 +57,17 @@ test('doctor fails safely without starting consent or printing invalid file cont
     }
   }
 });
+
+test('without root credentials, OAuth files default to the per-user config folder', t => {
+  if (fs.existsSync('credentials.json')) return t.skip('checkout keeps credentials.json in its root');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'classroom-home-test-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const moduleUrl = pathToFileURL(path.resolve('dist/auth.js')).href;
+  const env = { ...process.env, GOOGLE_CLASSROOM_MCP_HOME: dir };
+  delete env.GOOGLE_CREDENTIALS_PATH; delete env.GOOGLE_TOKEN_PATH;
+  const out = execFileSync(process.execPath, ['--input-type=module', '-e',
+    `const a=await import(${JSON.stringify(moduleUrl)});a.saveToken({access_token:'test-value'});console.log(JSON.stringify([a.credentialsPath,a.tokenPath]));`],
+  { env, stdio: 'pipe' }).toString();
+  assert.deepEqual(JSON.parse(out), [path.join(dir, 'credentials.json'), path.join(dir, 'token.json')]);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'token.json'))).access_token, 'test-value');
+});

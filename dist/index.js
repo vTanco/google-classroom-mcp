@@ -6,6 +6,7 @@ import { google } from 'googleapis';
 import { loadAuthClient } from './auth.js';
 import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
 import { Readable } from 'stream';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -750,7 +751,14 @@ export class GoogleClassroomServer {
         console.error('Google Classroom MCP ready.');
     }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+// npm runs bins through a symlink (node_modules/.bin, npx), so compare real paths.
+const realEntry = (file) => { try {
+    return fs.realpathSync(file);
+}
+catch {
+    return path.resolve(file);
+} };
+if (process.argv[1] && realEntry(process.argv[1]) === realEntry(__filename)) {
     new GoogleClassroomServer().run().catch(() => {
         console.error('MCP startup failed.');
         process.exitCode = 1;

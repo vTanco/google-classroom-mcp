@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 type Credentials = OAuth2Client['credentials'];
 import 'dotenv/config';
+export declare const configDir: string;
 export declare const credentialsPath: string;
 export declare const tokenPath: string;
 export declare const scopes: string[];

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -8,8 +9,15 @@ type Credentials = OAuth2Client['credentials'];
 import 'dotenv/config';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-export const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || path.join(root, 'credentials.json');
-export const tokenPath = process.env.GOOGLE_TOKEN_PATH || path.join(root, 'token.json');
+// Installed from npm (npx / npm i -g) the package folder is not a safe place for
+// secrets, so files live in a per-user folder. A git checkout that already keeps
+// credentials.json in its root continues to use it.
+export const configDir = process.env.GOOGLE_CLASSROOM_MCP_HOME
+  || path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'google-classroom-mcp-docentes');
+const defaultPath = (name: string): string =>
+  fs.existsSync(path.join(root, 'credentials.json')) ? path.join(root, name) : path.join(configDir, name);
+export const credentialsPath = process.env.GOOGLE_CREDENTIALS_PATH || defaultPath('credentials.json');
+export const tokenPath = process.env.GOOGLE_TOKEN_PATH || defaultPath('token.json');
 export const scopes = [
   'classroom.courses', 'classroom.coursework.students', 'classroom.courseworkmaterials',
   'classroom.topics', 'classroom.announcements', 'drive.file', 'drive.readonly',
@@ -22,6 +30,7 @@ export function hasRequiredScopes(token: Credentials): boolean {
 
 export function saveToken(token: Credentials, destination = tokenPath): void {
   const temporary = `${destination}.${randomUUID()}.tmp`;
+  fs.mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
   try {
     fs.writeFileSync(temporary, JSON.stringify(token, null, 2), { mode: 0o600, flag: 'wx' });
     fs.renameSync(temporary, destination);

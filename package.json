@@ -4,7 +4,8 @@
   "description": "Servidor MCP de Google Classroom para docentes: tareas, materiales, temas, anuncios y adjuntos de Drive desde Claude",
   "type": "module",
   "bin": {
-    "google-classroom-mcp": "./dist/index.js"
+    "google-classroom-mcp": "./dist/index.js",
+    "google-classroom-mcp-auth": "./auth.js"
   },
   "scripts": {
     "build": "tsc",
@@ -12,7 +13,8 @@
     "dev": "tsc --watch",
     "test": "npm run build && node --test tests/*.test.js",
     "auth": "npm run build && node auth.js",
-    "doctor": "npm run build && node auth.js --check"
+    "doctor": "npm run build && node auth.js --check",
+    "prepublishOnly": "npm test"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
@@ -33,12 +35,26 @@
     "classroom-api"
   ],
   "license": "MIT",
+  "author": "Vicente Tanco",
   "repository": {
     "type": "git",
     "url": "https://github.com/vTanco/google-classroom-mcp.git"
   },
-  "private": true,
+  "homepage": "https://github.com/vTanco/google-classroom-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/vTanco/google-classroom-mcp/issues"
+  },
   "engines": {
     "node": "^22.0.0 || ^24.0.0"
-  }
+  },
+  "files": [
+    "dist/*.js",
+    "dist/*.d.ts",
+    "auth.js",
+    "README.md",
+    "INSTALACION.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    ".env.example"
+  ]
 }
