@@ -11,3 +11,7 @@ credentials*.json
 token*.json*
 *.pem
 *.key
+
+# Generated Claude Desktop bundle
+build/
+*.mcpb

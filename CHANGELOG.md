@@ -8,6 +8,28 @@
 - **Modo de los adjuntos de Drive:** nuevo campo `shareMode` (`VIEW`, `EDIT`, `STUDENT_COPY` en tareas; `VIEW`, `EDIT` en materiales).
 - Scripts con `npm` en lugar de `bun`; dependencias actualizadas (`npm audit`: 0 vulnerabilidades).
 
+## 3.1.0 (2026-11-13)
+
+Pensada para docentes sin experiencia técnica.
+
+### Instalación más fácil
+- **Extensión de un clic para Claude Desktop** (`google-classroom-docentes.mcpb`): se instala con doble clic, sin Node.js ni Terminal. Se genera y adjunta en cada *release* de GitHub.
+- **Conexión desde el chat**: `classroom_connect` recoge la llave descargada en Descargas, abre el inicio de sesión de Google y espera a que termines. `classroom_status` explica qué falta y cómo arreglarlo. Cuando la sesión caduca, basta con decir «reconecta Classroom».
+- **Asistente para la terminal** (`npx -y google-classroom-mcp-docentes setup`): abre cada pantalla de Google Cloud, detecta la llave descargada, conecta la cuenta y lo añade a Claude Desktop y Claude Code (con copia de seguridad de la configuración).
+- Inicio de sesión propio (PKCE, selector de cuenta siempre visible, una sola ventana a la vez) en lugar de `@google-cloud/local-auth`.
+- Mensajes de error en español, con el paso concreto a seguir.
+- Dependencias de Google reducidas a Classroom, Drive y Slides: de 275 MB a 68 MB instalados.
+
+### Funciones nuevas
+- `classroom_get_overview`: borradores, publicaciones programadas y entregas próximas de todos tus cursos en una sola petición.
+- `classroom_copy_post`: copia una tarea o material a otros grupos, en borrador, con sus adjuntos y en el tema del mismo nombre (lo crea si falta).
+- Preguntas tipo test (`MULTIPLE_CHOICE_QUESTION` con `choices`).
+- `drive_search_files`: busca en tu Drive y en las unidades compartidas por nombre, tipo o carpeta.
+- `drive_upload_file` sube archivos de tu ordenador de hasta 100 MB (solo desde Descargas, Documentos, Escritorio o carpetas de nube), con conversión opcional a Documentos, Hojas o Presentaciones de Google.
+
+### Documentación
+- README y guía de instalación reescritos para docentes: tres pasos, enlaces directos a cada pantalla de Google Cloud y solución de problemas en lenguaje claro.
+
 ## 3.0.1 (2026-11-12)
 
 - `npx -y google-classroom-mcp-docentes` arranca el servidor: el paquete expone un comando con su propio nombre (en 3.0.0 npx no sabía cuál de los dos comandos ejecutar).

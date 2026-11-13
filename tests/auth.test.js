@@ -52,7 +52,7 @@ test('doctor fails safely without starting consent or printing invalid file cont
       assert.fail('doctor must fail');
     } catch (error) {
       assert.equal(error.status, 1);
-      assert.match(error.stderr.toString(), invalid ? /not valid JSON/ : /file missing/);
+      assert.match(error.stderr.toString(), invalid ? /no es un JSON válido/ : /Falta tu llave de Google/);
       assert(!error.stderr.toString().includes('private-test-value'));
     }
   }

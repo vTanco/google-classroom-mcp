@@ -11,11 +11,11 @@ test('stdio starts outside checkout and exposes tools without credentials', asyn
   const transport = new StdioClientTransport({ command: process.execPath, args: [path.resolve('dist/index.js')], cwd: os.tmpdir(), stderr: 'pipe', env: { GOOGLE_CREDENTIALS_PATH: '/nonexistent/credentials.json', GOOGLE_TOKEN_PATH: '/nonexistent/token.json' } });
   await client.connect(transport);
   t.after(() => client.close());
-  assert.equal((await client.listTools()).tools.length, 21);
+  assert.equal((await client.listTools()).tools.length, 26);
   assert.equal(client.getServerVersion().version, JSON.parse(fs.readFileSync('package.json', 'utf8')).version);
   const response = await client.callTool({ name: 'classroom_list_courses', arguments: { pageSize: 1 } });
   assert.equal(response.isError, true);
-  assert.match(response.content[0].text, /OAuth is unavailable/);
+  assert.match(response.content[0].text, /not connected \(credentials_missing\)/);
   assert(!JSON.stringify(response).includes('/nonexistent'));
 });
 
@@ -27,7 +27,7 @@ test('stdio starts when launched through a symlink, as npm bins and npx do', asy
   const transport = new StdioClientTransport({ command: process.execPath, args: [link], cwd: dir, stderr: 'pipe', env: { GOOGLE_CREDENTIALS_PATH: '/nonexistent/credentials.json', GOOGLE_TOKEN_PATH: '/nonexistent/token.json' } });
   await client.connect(transport);
   t.after(async () => { await client.close(); fs.rmSync(dir, { recursive: true, force: true }); });
-  assert.equal((await client.listTools()).tools.length, 21);
+  assert.equal((await client.listTools()).tools.length, 26);
 });
 
 test('npx can resolve the server from the package name alone', () => {
