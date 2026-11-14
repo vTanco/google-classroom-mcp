@@ -6,17 +6,83 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { google, classroom_v1, drive_v3, slides_v1 } from 'googleapis';
-import { loadAuthClient } from './auth.js';
+import { classroom as classroomApi, classroom_v1 } from '@googleapis/classroom';
+import { drive as driveApi, drive_v3 } from '@googleapis/drive';
+import { slides as slidesApi, slides_v1 } from '@googleapis/slides';
+import {
+  loadAuthClient, ensureCredentials, missingCredentialsReason, connectionProblem, diagnose,
+  startLogin, loginInProgress, openBrowser, type Problem,
+} from './auth.js';
+import { resolveUpload, googleFormatFor } from './upload.js';
 import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
 import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
+import { setTimeout as sleep } from 'timers/promises';
 import { fileURLToPath } from 'url';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const packageVersion: string = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+
+const GUIDE = 'https://github.com/vTanco/google-classroom-mcp/blob/main/INSTALACION.md';
+const ENABLE_APIS = 'https://console.cloud.google.com/flows/enableapi?apiid=classroom.googleapis.com,drive.googleapis.com,slides.googleapis.com';
+
+// What to tell the teacher for each obstacle. Written for the assistant, which
+// relays it in the teacher's language; never includes local paths or secrets.
+const HELP: Record<Problem, { summary: string; nextStep: string }> = {
+  credentials_missing: {
+    summary: 'The teacher has not added their Google credentials file yet (a one-time step).',
+    nextStep: `Walk them through "Tu llave de Google" in ${GUIDE}#paso-1-tu-llave-de-google. It ends with a downloaded file named client_secret_....json. Leave it in the Downloads folder and call classroom_connect: it is picked up automatically.`,
+  },
+  credentials_invalid: {
+    summary: 'The Google credentials file is damaged (incomplete download or edited by hand).',
+    nextStep: 'Ask them to download the JSON again from Google Cloud (Google Auth Platform > Clients > download icon), leave it in Downloads and call classroom_connect.',
+  },
+  credentials_not_desktop: {
+    summary: 'The credentials belong to a "Web application" client, which cannot be used here.',
+    nextStep: 'Ask them to create a new client of type "Desktop app" (App de escritorio) in Google Auth Platform > Clients, download its JSON and call classroom_connect.',
+  },
+  not_signed_in: {
+    summary: 'The credentials are in place but the teacher has not signed in with Google yet.',
+    nextStep: 'Call classroom_connect to open the Google sign-in page in their browser.',
+  },
+  scopes_missing: {
+    summary: 'The teacher signed in without granting every permission.',
+    nextStep: 'Call classroom_connect and ask them to tick every checkbox on Google\'s permission screen before continuing.',
+  },
+  sign_in_expired: {
+    summary: 'The Google sign-in expired or was revoked. Google Cloud projects in "Testing" mode expire every 7 days; this is expected.',
+    nextStep: 'Call classroom_connect to sign in again (about one minute, no terminal needed).',
+  },
+  client_mismatch: {
+    summary: 'Google no longer recognises these credentials (the client was deleted or replaced).',
+    nextStep: 'Ask them to download the client JSON again from Google Cloud, leave it in Downloads and call classroom_connect.',
+  },
+  api_disabled: {
+    summary: 'A required Google API is not enabled in the teacher\'s Google Cloud project.',
+    nextStep: `Ask them to open ${ENABLE_APIS} with the same project selected, press Enable, wait a minute and try again.`,
+  },
+  access_denied: {
+    summary: 'Google denied access to Classroom for this account.',
+    nextStep: `Usual causes: the school's Google Workspace administrator blocks third-party apps, or the account is not listed as a test user. See ${GUIDE}#si-algo-falla.`,
+  },
+  file_permission: {
+    summary: 'The saved sign-in files cannot be read or written on this computer.',
+    nextStep: 'Ask them to check that their user can write to the google-classroom-mcp-docentes folder inside their home .config folder, then call classroom_connect.',
+  },
+  offline: {
+    summary: 'Google could not be reached.',
+    nextStep: 'Ask them to check the internet connection and try again in a moment.',
+  },
+};
+const SIGN_IN_FIXES: Problem[] = ['not_signed_in', 'scopes_missing', 'sign_in_expired'];
+
+export interface ServerOptions {
+  /** How long classroom_connect waits for the teacher to finish in the browser before answering "still waiting". */
+  signInWaitMs?: number;
+  openBrowser?: (url: string) => void;
+}
 
 
 export class GoogleClassroomServer {
@@ -25,7 +91,7 @@ export class GoogleClassroomServer {
   private drive?: drive_v3.Drive;
   private slides?: slides_v1.Slides;
 
-  constructor() {
+  constructor(private options: ServerOptions = {}) {
     this.server = new Server(
       { name: 'google-classroom-mcp', version: packageVersion },
       { capabilities: { tools: {} } }
@@ -36,11 +102,74 @@ export class GoogleClassroomServer {
   private async initApis() {
     if (!this.classroom || !this.drive || !this.slides) {
       const auth = loadAuthClient();
-      this.classroom = google.classroom({ version: 'v1', auth });
-      this.drive = google.drive({ version: 'v3', auth });
-      this.slides = google.slides({ version: 'v1', auth });
+      this.classroom = classroomApi({ version: 'v1', auth });
+      this.drive = driveApi({ version: 'v3', auth });
+      this.slides = slidesApi({ version: 'v1', auth });
     }
     return { classroom: this.classroom!, drive: this.drive!, slides: this.slides! };
+  }
+
+  private resetApis() { this.classroom = this.drive = this.slides = undefined; }
+
+  private report(data: Record<string, unknown>, isError = false) {
+    return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }], ...(isError ? { isError } : {}) };
+  }
+
+  private blocked(problem: Problem) {
+    return this.report({ connected: false, problem, ...HELP[problem] });
+  }
+
+  // ─── classroom_status: is Classroom reachable, and if not, what is missing ──
+  private async status() {
+    const problem = await connectionProblem();
+    if (!problem) return this.report({ connected: true, version: packageVersion, summary: 'Google Classroom is connected and answering.' });
+    const login = loginInProgress();
+    if (login && SIGN_IN_FIXES.includes(problem)) {
+      return this.report({
+        connected: false, state: 'waiting_for_sign_in', signInUrl: login.url,
+        summary: 'The Google sign-in page is open and waiting for the teacher to finish.',
+        nextStep: 'Ask them to complete it in the browser (or open signInUrl), then call classroom_status again.',
+      });
+    }
+    return this.blocked(problem);
+  }
+
+  // ─── classroom_connect: sign in from the chat, no terminal ─────────────────
+  private async connect() {
+    let source: ReturnType<typeof ensureCredentials>;
+    try { source = ensureCredentials({ searchDownloads: true }); }
+    catch (error) { return this.blocked(diagnose(error)); }
+    if (!source) {
+      const reason = missingCredentialsReason();
+      return this.blocked(reason === 'invalid' ? 'credentials_invalid' : reason === 'not_desktop' ? 'credentials_not_desktop' : 'credentials_missing');
+    }
+    const imported = source === 'downloads' ? { credentialsImported: 'Found the client_secret file in Downloads and stored a private copy; the downloaded file can be deleted.' } : {};
+    const problem = await connectionProblem();
+    if (!problem) return this.report({ connected: true, ...imported, summary: 'Google Classroom is already connected.' });
+    if (!SIGN_IN_FIXES.includes(problem)) return this.blocked(problem);
+
+    let login;
+    try { login = await startLogin({ open: this.options.openBrowser ?? (process.env.GOOGLE_CLASSROOM_NO_BROWSER ? () => {} : openBrowser) }); }
+    catch (error) { return this.blocked(diagnose(error)); }
+    login.done.then(() => this.resetApis(), () => {});
+    const outcome = await Promise.race([
+      login.done.then(() => 'done' as const, (error: unknown) => ({ error })),
+      sleep(this.options.signInWaitMs ?? 40_000, 'waiting' as const, { ref: false }),
+    ]);
+    if (outcome === 'waiting') {
+      return this.report({
+        connected: false, state: 'waiting_for_sign_in', signInUrl: login.url, ...imported,
+        summary: 'The Google sign-in page was opened in the teacher\'s browser.',
+        nextStep: 'Ask them to choose their school account, tick every permission and continue. If no page opened, give them signInUrl. If Google warns that the app is not verified, that is expected (the app is their own): Advanced > Go to the app. When they say it is done, call classroom_status.',
+      });
+    }
+    if (outcome !== 'done') {
+      const reason = diagnose(outcome.error);
+      if (reason !== 'offline') return this.blocked(reason);
+      return this.report({ connected: false, ...imported, summary: 'The sign-in was cancelled or timed out; nothing changed.', nextStep: 'Call classroom_connect again when the teacher is ready.' });
+    }
+    const after = await connectionProblem();
+    return after ? this.blocked(after) : this.report({ connected: true, ...imported, summary: 'Google Classroom is now connected.' });
   }
 
   private setupHandlers() {
@@ -74,27 +203,50 @@ export class GoogleClassroomServer {
           } catch { return fail('Attachment link is invalid.'); }
         }
       }
-      if (name === 'drive_upload_file') {
-        const content = args.base64Content as string;
-        const buffer = Buffer.from(content, 'base64');
-        if (buffer.length > 5 * 1024 * 1024 || buffer.toString('base64') !== content) return fail('File must be canonical base64 and at most 5 MiB.');
+      if (name === 'classroom_create_assignment') {
+        const multipleChoice = args.workType === 'MULTIPLE_CHOICE_QUESTION';
+        if (multipleChoice !== Boolean(args.choices)) return fail('choices is required for MULTIPLE_CHOICE_QUESTION and only allowed there.');
+        if (multipleChoice && new Set(args.choices as string[]).size !== (args.choices as string[]).length) return fail('choices must be different from each other.');
       }
+      if (name === 'drive_upload_file') {
+        if (Boolean(args.localPath) === Boolean(args.base64Content)) return fail('Supply exactly one of localPath (a file on this computer) or base64Content.');
+        if (args.localPath) {
+          try { resolveUpload(args.localPath as string); } catch (error: any) { return fail(error.message); }
+        } else {
+          if (!args.name) return fail('name is required with base64Content.');
+          const content = args.base64Content as string;
+          const buffer = Buffer.from(content, 'base64');
+          if (buffer.length > 5 * 1024 * 1024 || buffer.toString('base64') !== content) return fail('File must be canonical base64 and at most 5 MiB.');
+        }
+      }
+      if (name === 'classroom_status') return this.status();
+      if (name === 'classroom_connect') return this.connect();
       let apis;
       try { apis = await this.initApis(); }
-      catch { return fail('OAuth is unavailable. Run npm run auth and check credential/token file paths and permissions.'); }
+      catch (error) {
+        const problem = diagnose(error);
+        return fail(`Google Classroom is not connected (${problem}). ${HELP[problem].summary} ${HELP[problem].nextStep}`);
+      }
       try {
         return await this.handleToolCall(apis.classroom, apis.drive, apis.slides, name, args);
       } catch (error: any) {
-        const status = Number(error.response?.status || error.code);
-        const reason = status === 401 ? 'OAuth expired; run npm run auth.'
-          : status === 403 ? 'Access denied. Check scopes, course role and the Google project that created the post.'
-          : status === 404 ? 'Resource not found or inaccessible.'
-          : status === 400 ? 'Google rejected these arguments or this state change.'
-          : status === 429 ? 'Google rate limit reached.' : 'Google request failed.';
         const readOnly = /_(list|get|search)_/.test(name);
-        return fail(reason + (readOnly ? '' : ' Verify the target before retrying; the write may have succeeded.'));
+        return fail(this.googleReason(error) + (readOnly ? '' : ' Verify the target before retrying; the write may have succeeded.'));
       }
     });
+  }
+
+  private googleReason(error: any): string {
+    const status = Number(error.response?.status || error.code);
+    const problem = diagnose(error);
+    if (problem === 'sign_in_expired' || problem === 'client_mismatch' || problem === 'api_disabled') {
+      if (problem !== 'api_disabled') this.resetApis();
+      return `${HELP[problem].summary} ${HELP[problem].nextStep}`;
+    }
+    return status === 403 ? 'Access denied. Check the course role and remember that Google only lets this app edit posts it created itself.'
+      : status === 404 ? 'Resource not found or inaccessible.'
+      : status === 400 ? 'Google rejected these arguments or this state change.'
+      : status === 429 ? 'Google rate limit reached.' : 'Google request failed.';
   }
 
   // ─── HELPER: map attachment descriptors to Classroom API material format ───
@@ -126,6 +278,18 @@ export class GoogleClassroomServer {
   // ─── TOOLS DECLARATION ────────────────────────────────────────────────────
   private getTools(): Tool[] {
     const tools: Tool[] = [
+
+      // ── CONNECTION ───────────────────────────────────────────────────────
+      {
+        name: 'classroom_status',
+        description: 'Check whether Google Classroom is connected. If it is not, returns what is missing and the exact next step to tell the teacher. Call this first when the teacher asks whether the connection works or when another tool reports it is not connected.',
+        inputSchema: { type: 'object', properties: {} },
+      },
+      {
+        name: 'classroom_connect',
+        description: 'Connect or reconnect Google Classroom without a terminal: picks up the credentials file from the Downloads folder if needed and opens Google sign-in in the teacher\'s browser. Use it for first-time setup and whenever the sign-in has expired.',
+        inputSchema: { type: 'object', properties: {} },
+      },
 
       {
         name: 'slides_get_presentation',
@@ -169,6 +333,17 @@ export class GoogleClassroomServer {
           type: 'object',
           properties: { courseId: { type: 'string' } },
           required: ['courseId'],
+        },
+      },
+      {
+        name: 'classroom_get_overview',
+        description: 'One-call planning summary across the courses the teacher teaches: unpublished drafts (count plus up to 20 per course), posts scheduled for later and assignments due in the coming days. Use it for questions like "what do I have pending this week?" instead of listing each course.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            daysAhead: { type: 'integer', minimum: 1, maximum: 60, default: 14, description: 'How far ahead to look for due dates' },
+            courseIds: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 30, description: 'Limit to these courses (default: every active course the teacher teaches, up to 30)' },
+          },
         },
       },
       {
@@ -217,14 +392,15 @@ export class GoogleClassroomServer {
       },
       {
         name: 'classroom_create_assignment',
-        description: 'Create an assignment or question with optional attachments, due date, and topic.',
+        description: 'Create an assignment, a short-answer question or a multiple-choice question (one question with choices) with optional attachments, due date, and topic.',
         inputSchema: {
           type: 'object',
           properties: {
             courseId: { type: 'string' },
             title: { type: 'string' },
             description: { type: 'string' },
-            workType: { type: 'string', enum: ['ASSIGNMENT', 'SHORT_ANSWER_QUESTION'], default: 'ASSIGNMENT' },
+            workType: { type: 'string', enum: ['ASSIGNMENT', 'SHORT_ANSWER_QUESTION', 'MULTIPLE_CHOICE_QUESTION'], default: 'ASSIGNMENT' },
+            choices: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 2, maxItems: 20, description: 'Answer options; required for MULTIPLE_CHOICE_QUESTION only' },
             state: { type: 'string', enum: ['PUBLISHED', 'DRAFT'], default: 'DRAFT' },
             scheduledTime: { type: 'string', description: 'RFC 3339 timestamp for scheduled publication' },
             maxPoints: { type: 'number' },
@@ -265,6 +441,24 @@ export class GoogleClassroomServer {
             state: { type: 'string', enum: ['PUBLISHED', 'DRAFT'] },
           },
           required: ['courseId', 'id', 'updateMask'],
+        },
+      },
+
+      {
+        name: 'classroom_copy_post',
+        description: 'Copy an assignment or a material to other courses (for example the same unit for several groups). Copies are always created as DRAFT with the same title, instructions, points and attachments; the topic is matched by name and created if missing. Copies made here stay editable by this app.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            sourceCourseId: { type: 'string' },
+            id: { type: 'string', description: 'ID of the assignment or material to copy' },
+            kind: { type: 'string', enum: ['assignment', 'material'] },
+            targetCourseIds: { type: 'array', items: { type: 'string', minLength: 1 }, minItems: 1, maxItems: 10 },
+            keepTopic: { type: 'boolean', default: true, description: 'Place each copy under a topic with the same name' },
+            dueDate: { type: 'string', description: 'YYYY-MM-DD for the copies (assignments). Default: the original due date if it is still in the future, otherwise none.' },
+            dueTime: { type: 'string', description: 'HH:MM in local time; requires dueDate' },
+          },
+          required: ['sourceCourseId', 'id', 'kind', 'targetCourseIds'],
         },
       },
 
@@ -435,16 +629,30 @@ export class GoogleClassroomServer {
 
       // ── DRIVE & ATTACHMENTS ───────────────────────────────────────────────
       {
-        name: 'drive_upload_file',
-        description: 'Upload a base64-encoded file to Google Drive. Returns the Drive file ID and URL.',
+        name: 'drive_search_files',
+        description: 'Find files in the teacher\'s Google Drive (including shared drives) by words in the name, by type or inside a folder, newest first. Use the returned id as a driveFile attachment.',
         inputSchema: {
           type: 'object',
           properties: {
-            name: { type: 'string' },
-            mimeType: { type: 'string', maxLength: 127, pattern: '^[a-zA-Z0-9!#$&^_.+-]+/[a-zA-Z0-9!#$&^_.+-]+$', default: 'application/octet-stream' },
-            base64Content: { type: 'string', maxLength: 6990508, pattern: '^[A-Za-z0-9+/=]+$' },
+            query: { type: 'string', maxLength: 200, description: 'Words that appear in the file name, e.g. "práctica 05"' },
+            type: { type: 'string', enum: ['any', 'document', 'spreadsheet', 'presentation', 'form', 'pdf', 'image', 'video', 'folder'], default: 'any' },
+            folderId: { type: 'string', pattern: '^[A-Za-z0-9_-]+$', description: 'Only files directly inside this Drive folder' },
           },
-          required: ['name', 'base64Content'],
+        },
+      },
+      {
+        name: 'drive_upload_file',
+        description: 'Upload a file to Google Drive and return its Drive ID and URL, ready to attach. Prefer localPath for a file on the teacher\'s computer (Downloads, Documents, Desktop or a cloud-drive folder; up to 100 MB). base64Content is for small generated files (up to 5 MiB).',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            localPath: { type: 'string', maxLength: 1024, description: 'Absolute path (or ~/...) of a file on this computer' },
+            name: { type: 'string', description: 'File name in Drive (default: the local file name)' },
+            mimeType: { type: 'string', maxLength: 127, pattern: '^[a-zA-Z0-9!#$&^_.+-]+/[a-zA-Z0-9!#$&^_.+-]+$', description: 'Default: detected from the file extension' },
+            base64Content: { type: 'string', maxLength: 6990508, pattern: '^[A-Za-z0-9+/=]+$' },
+            convertToGoogleFormat: { type: 'boolean', default: false, description: 'Convert Word/Excel/PowerPoint/OpenDocument/CSV files to Google Docs/Sheets/Slides so students can edit them online' },
+            folderId: { type: 'string', pattern: '^[A-Za-z0-9_-]+$', description: 'Drive folder to upload into (default: My Drive)' },
+          },
         },
       },
     ];
@@ -452,15 +660,15 @@ export class GoogleClassroomServer {
     for (const tool of tools) {
       const properties = tool.inputSchema.properties as Record<string, any>;
       tool.inputSchema.additionalProperties = false;
-      tool.annotations = { readOnlyHint: /_(list|get|search)_/.test(tool.name), openWorldHint: true };
-      if (tool.name.includes('_list_') || tool.name === 'classroom_search_courses') {
+      tool.annotations = { readOnlyHint: /_(list|get|search)_|_status$/.test(tool.name), openWorldHint: true };
+      if (tool.name.includes('_list_') || ['classroom_search_courses', 'drive_search_files'].includes(tool.name)) {
         properties.pageToken = { type: 'string', minLength: 1 };
         properties.pageSize = { type: 'integer', minimum: 1, maximum: 100, default: 50 };
         properties.fullData = { type: 'boolean', default: false };
         tool.description += ' Returns one page as {items, nextPageToken}; continue until nextPageToken is null.';
       }
       for (const [name, property] of Object.entries(properties)) {
-        if (property.type === 'string' && !['description', 'section', 'room', 'topicId'].includes(name)) property.minLength = 1;
+        if (property.type === 'string' && !['description', 'section', 'room', 'topicId', 'query'].includes(name)) property.minLength = 1;
         if (name === 'scheduledTime') {
           property.format = 'date-time';
           if (tool.name.startsWith('classroom_patch_')) {
@@ -583,6 +791,7 @@ export class GoogleClassroomServer {
           scheduledTime: args.scheduledTime,
           maxPoints: args.maxPoints,
           topicId: args.topicId,
+          ...(args.choices ? { multipleChoiceQuestion: { choices: args.choices } } : {}),
           ...this.parseDueDateTime(args.dueDate, args.dueTime),
         };
         if (args.attachments?.length) {
@@ -613,6 +822,118 @@ export class GoogleClassroomServer {
           requestBody: body,
         });
         return ok(r.data);
+      }
+
+      case 'classroom_copy_post': {
+        const assignment = args.kind === 'assignment';
+        const source: any = assignment
+          ? (await classroom.courses.courseWork.get({ courseId: args.sourceCourseId, id: args.id })).data
+          : (await classroom.courses.courseWorkMaterials.get({ courseId: args.sourceCourseId, id: args.id })).data;
+        // Keep only what identifies each attachment; titles and thumbnails are output-only.
+        const materials = (source.materials ?? []).map((m: any) =>
+          m.driveFile ? { driveFile: { driveFile: { id: m.driveFile.driveFile?.id }, ...(m.driveFile.shareMode ? { shareMode: m.driveFile.shareMode } : {}) } }
+          : m.youtubeVideo ? { youtubeVideo: { id: m.youtubeVideo.id } }
+          : m.link ? { link: { url: m.link.url } }
+          : m.form ? { form: { formUrl: m.form.formUrl } } : null).filter(Boolean);
+        const topicName: string | undefined = args.keepTopic !== false && source.topicId
+          ? (await classroom.courses.topics.get({ courseId: args.sourceCourseId, id: source.topicId })).data.name ?? undefined
+          : undefined;
+
+        let due: Record<string, unknown> = {};
+        let dueDateDropped = false;
+        if (assignment && args.dueDate) {
+          due = this.parseDueDateTime(args.dueDate, args.dueTime);
+        } else if (assignment && source.dueDate) {
+          const { year, month, day } = source.dueDate;
+          const original = Date.UTC(year, month - 1, day, source.dueTime?.hours ?? 23, source.dueTime?.minutes ?? 59);
+          if (original > Date.now()) due = { dueDate: source.dueDate, dueTime: source.dueTime ?? { hours: 23, minutes: 59 } };
+          else dueDateDropped = true;
+        }
+
+        const copies = [];
+        for (const courseId of args.targetCourseIds as string[]) {
+          try {
+            let topicId: string | undefined;
+            if (topicName) {
+              const topics = (await classroom.courses.topics.list({ courseId, pageSize: 100 })).data.topic ?? [];
+              const same = topics.find(topic => topic.name?.trim().toLowerCase() === topicName.trim().toLowerCase());
+              topicId = same?.topicId ?? (await classroom.courses.topics.create({ courseId, requestBody: { name: topicName } })).data.topicId ?? undefined;
+            }
+            const requestBody: any = {
+              title: source.title, description: source.description, topicId, state: 'DRAFT',
+              ...(materials.length ? { materials } : {}),
+              ...(assignment ? {
+                workType: source.workType, maxPoints: source.maxPoints, ...due,
+                ...(source.multipleChoiceQuestion ? { multipleChoiceQuestion: { choices: source.multipleChoiceQuestion.choices } } : {}),
+              } : {}),
+            };
+            const created: any = assignment
+              ? (await classroom.courses.courseWork.create({ courseId, requestBody })).data
+              : (await classroom.courses.courseWorkMaterials.create({ courseId, requestBody })).data;
+            copies.push({ courseId, id: created.id, state: created.state ?? 'DRAFT', topic: topicName ?? null, alternateLink: created.alternateLink ?? null });
+          } catch (error) {
+            copies.push({ courseId, error: this.googleReason(error) });
+          }
+        }
+        return ok({
+          title: source.title, kind: args.kind, copies,
+          ...(dueDateDropped ? { note: 'The original due date has passed, so the copies have no due date. Set one with classroom_patch_assignment.' } : {}),
+        });
+      }
+
+      case 'classroom_get_overview': {
+        const days = args.daysAhead ?? 14;
+        const now = Date.now();
+        const until = now + days * 24 * 60 * 60 * 1000;
+        const local = (time: number) => {
+          const d = new Date(time);
+          const two = (n: number) => String(n).padStart(2, '0');
+          return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}:${two(d.getMinutes())}`;
+        };
+        let courses: { id: string; name?: string | null; section?: string | null }[];
+        let moreCourses = false;
+        if (args.courseIds) {
+          courses = (args.courseIds as string[]).map(id => ({ id }));
+        } else {
+          const r = await classroom.courses.list({ teacherId: 'me', courseStates: ['ACTIVE'], pageSize: 30, fields: 'courses(id,name,section),nextPageToken' });
+          courses = (r.data.courses ?? []).map(c => ({ id: c.id!, name: c.name, section: c.section }));
+          moreCourses = Boolean(r.data.nextPageToken);
+        }
+        const summarize = async (course: typeof courses[number]) => {
+          try {
+            const [work, materials, announcements] = await Promise.all([
+              classroom.courses.courseWork.list({ courseId: course.id, courseWorkStates: ['PUBLISHED', 'DRAFT'], pageSize: 100, fields: 'courseWork(id,title,state,dueDate,dueTime,scheduledTime)' }),
+              classroom.courses.courseWorkMaterials.list({ courseId: course.id, courseWorkMaterialStates: ['DRAFT'], pageSize: 100, fields: 'courseWorkMaterial(id,title,scheduledTime)' }),
+              classroom.courses.announcements.list({ courseId: course.id, announcementStates: ['DRAFT'], pageSize: 100, fields: 'announcements(id,text,scheduledTime)' }),
+            ]);
+            const pending = [
+              ...(work.data.courseWork ?? []).filter(w => w.state === 'DRAFT').map(w => ({ kind: 'assignment', id: w.id, title: w.title, scheduledTime: w.scheduledTime })),
+              ...(materials.data.courseWorkMaterial ?? []).map(m => ({ kind: 'material', id: m.id, title: m.title, scheduledTime: m.scheduledTime })),
+              ...(announcements.data.announcements ?? []).map(a => ({ kind: 'announcement', id: a.id, title: (a.text ?? '').slice(0, 80), scheduledTime: a.scheduledTime })),
+            ];
+            const dueSoon = (work.data.courseWork ?? []).flatMap(w => {
+              if (w.state !== 'PUBLISHED' || !w.dueDate?.year) return [];
+              const time = Date.UTC(w.dueDate.year, (w.dueDate.month ?? 1) - 1, w.dueDate.day ?? 1, w.dueTime?.hours ?? 23, w.dueTime?.minutes ?? 59);
+              return time >= now && time <= until ? [{ id: w.id, title: w.title, due: local(time), time }] : [];
+            }).sort((a, b) => a.time - b.time).map(({ time, ...rest }) => rest);
+            return {
+              courseId: course.id, name: course.name ?? undefined, section: course.section ?? undefined,
+              draftCount: pending.filter(p => !p.scheduledTime).length,
+              // The newest drafts are enough to plan with; a long backlog would flood the answer.
+              drafts: pending.filter(p => !p.scheduledTime).slice(0, 20).map(({ scheduledTime, ...rest }) => rest),
+              scheduled: pending.filter(p => p.scheduledTime).map(({ scheduledTime, ...rest }) => ({ ...rest, publishesAt: local(Date.parse(scheduledTime!)) })),
+              dueSoon,
+            };
+          } catch (error) {
+            return { courseId: course.id, name: course.name ?? undefined, error: this.googleReason(error) };
+          }
+        };
+        const summaries = [];
+        for (let i = 0; i < courses.length; i += 5) summaries.push(...await Promise.all(courses.slice(i, i + 5).map(summarize)));
+        return ok({
+          timesAre: 'local time of this computer', from: local(now), to: local(until), courses: summaries,
+          ...(moreCourses ? { note: 'Only the first 30 active courses are included; pass courseIds for others.' } : {}),
+        });
       }
 
       // ── TOPICS ─────────────────────────────────────────────────────────
@@ -740,15 +1061,45 @@ export class GoogleClassroomServer {
       }
 
       // ── DRIVE & ATTACHMENTS ────────────────────────────────────────────
-      case 'drive_upload_file': {
-        const buffer = Buffer.from(args.base64Content, 'base64');
-        const mimeType = args.mimeType ?? 'application/octet-stream';
-        const r = await drive.files.create({
-          requestBody: { name: args.name, mimeType },
-          media: { mimeType, body: Readable.from(buffer) },
-          fields: 'id,name,webViewLink',
+      case 'drive_search_files': {
+        const quote = (text: string) => `'${text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+        const google = (kind: string) => `mimeType = 'application/vnd.google-apps.${kind}'`;
+        const byType: Record<string, string> = {
+          document: google('document'), spreadsheet: google('spreadsheet'), presentation: google('presentation'),
+          form: google('form'), folder: google('folder'), pdf: "mimeType = 'application/pdf'",
+          image: "mimeType contains 'image/'", video: "mimeType contains 'video/'",
+        };
+        const conditions = ['trashed = false'];
+        for (const word of String(args.query ?? '').split(/\s+/).filter(Boolean)) conditions.push(`name contains ${quote(word)}`);
+        if (args.type && args.type !== 'any') conditions.push(byType[args.type]);
+        if (args.folderId) conditions.push(`${quote(args.folderId)} in parents`);
+        const r = await drive.files.list({
+          q: conditions.join(' and '),
+          orderBy: 'modifiedTime desc',
+          pageSize: args.pageSize ?? 50,
+          pageToken: args.pageToken,
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true,
+          fields: args.fullData ? 'files,nextPageToken' : 'files(id,name,mimeType,modifiedTime,webViewLink),nextPageToken',
         });
-        return ok(r.data);
+        return ok({ items: r.data.files ?? [], nextPageToken: r.data.nextPageToken ?? null });
+      }
+
+      case 'drive_upload_file': {
+        const local = args.localPath ? resolveUpload(args.localPath) : undefined;
+        const name = args.name ?? local!.name;
+        const mimeType = args.mimeType ?? local?.mimeType ?? 'application/octet-stream';
+        const converted = args.convertToGoogleFormat ? googleFormatFor(local?.name ?? name) : null;
+        const r = await drive.files.create({
+          requestBody: { name, mimeType: converted ?? mimeType, ...(args.folderId ? { parents: [args.folderId] } : {}) },
+          media: { mimeType, body: local ? fs.createReadStream(local.file) : Readable.from(Buffer.from(args.base64Content, 'base64')) },
+          supportsAllDrives: true,
+          fields: 'id,name,mimeType,webViewLink',
+        });
+        return ok({
+          ...r.data,
+          ...(args.convertToGoogleFormat && !converted ? { note: 'This file type has no Google Docs/Sheets/Slides equivalent, so it was uploaded unchanged.' } : {}),
+        });
       }
 
       default:
@@ -765,8 +1116,13 @@ export class GoogleClassroomServer {
 // npm runs bins through a symlink (node_modules/.bin, npx), so compare real paths.
 const realEntry = (file: string): string => { try { return fs.realpathSync(file); } catch { return path.resolve(file); } };
 if (process.argv[1] && realEntry(process.argv[1]) === realEntry(__filename)) {
-  new GoogleClassroomServer().run().catch(() => {
-    console.error('MCP startup failed.');
-    process.exitCode = 1;
-  });
+  if (process.argv.length > 2) {
+    // setup / auth / doctor: the commands a person runs; Claude starts the server with none.
+    import('./cli.js').then(async cli => { process.exitCode = await cli.main(process.argv.slice(2)); });
+  } else {
+    new GoogleClassroomServer().run().catch(() => {
+      console.error('MCP startup failed.');
+      process.exitCode = 1;
+    });
+  }
 }

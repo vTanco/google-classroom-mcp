@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="Google Classroom MCP para docentes" width="100%">
+<img src="docs/assets/banner.svg" alt="Google Classroom para docentes" width="100%">
 
-# 🧭 Guía de instalación
+# Guía de instalación
 
-⏱️ **20-30 minutos** la primera vez · 💻 Mac o Windows · 🆓 Gratuito
+**15 minutos** la primera vez · Mac o Windows · Gratis · Sin Terminal
 
 [← Volver al README](README.md)
 
@@ -12,212 +12,167 @@
 
 ---
 
-Pasos:
-1. [Instalar Node.js](#1-instalar-nodejs-)
-2. [Descargar y preparar el servidor](#2-descargar-y-preparar-el-servidor-)
-3. [Crear tu proyecto en Google Cloud y tu `credentials.json`](#3-crear-tu-proyecto-en-google-cloud-)
-4. [Autorizar tu cuenta de Google](#4-autorizar-tu-cuenta-de-google-)
-5. [Conectarlo a Claude](#5-conectarlo-a-claude-)
-6. [Primera prueba](#6-primera-prueba-)
-7. [Solución de problemas](#7-solución-de-problemas-)
+Vas a hacer tres cosas:
+
+1. [Crear tu llave de Google](#paso-1-tu-llave-de-google) (10 minutos, en la web de Google)
+2. [Instalar la extensión en Claude Desktop](#paso-2-instalar-la-extensión) (1 minuto)
+3. [Conectar tu cuenta](#paso-3-conectar-tu-cuenta) (1 minuto, desde el chat)
+
+**Antes de empezar**, ten a mano:
+
+- **Claude Desktop** instalado ([descárgalo aquí](https://claude.ai/download)).
+- Tu **cuenta de Google del centro**, la misma con la que entras en Classroom.
 
 > [!TIP]
-> Si usas Claude Code, puedes pegarle esta guía y pedirle que haga contigo los pasos 1, 2, 4 y 5. El paso 3 (Google Cloud) y elegir tu cuenta en el navegador tienes que hacerlos tú.
+> Si tienes varias cuentas de Google abiertas en el navegador (personal y del centro), haz el paso 1 en una **ventana de incógnito** y entra solo con la del centro. Así no te equivocarás de cuenta.
 
 ---
 
-## 1. Instalar Node.js 📦
+## Paso 1. Tu llave de Google
 
-Necesitas **Node.js 22 o 24**.
+Google no deja que ninguna aplicación entre en tu Classroom sin tu permiso. Para darlo, cada docente crea su propia «llave» en Google Cloud. Es gratis, no pide tarjeta y solo se hace una vez.
 
-- Descárgalo de <https://nodejs.org> (versión **LTS**) e instálalo.
-- Comprueba en la Terminal (Mac) o en PowerShell (Windows):
+Cada apartado tiene un **enlace directo** a la pantalla que necesitas.
 
-```bash
-node -v
-```
+### A. Crea el proyecto
 
-Debe mostrar `v22.x` o `v24.x`.
+1. Abre **[Nuevo proyecto](https://console.cloud.google.com/projectcreate)**. Si es la primera vez, acepta las condiciones.
+2. En **Nombre del proyecto** escribe `Classroom MCP`.
+3. Pulsa **Crear** y espera unos segundos a que termine.
 
 > [!NOTE]
-> **Sin permisos de administrador (ordenadores del centro):** en la página de descargas de Node.js elige el archivo comprimido (`.tar.gz` en Mac, `.zip` en Windows), descomprímelo en tu carpeta de usuario y usa la ruta completa a `node` en los pasos siguientes (p. ej. `~/node/bin/node`).
+> Si aparece una oferta de «prueba gratuita de 300 $», ignórala: lo que vas a usar es gratis siempre.
 
-## 2. Descargar y preparar el servidor 📥
+### B. Activa Classroom, Drive y Slides
 
-**Opción A — con git:**
+1. Abre **[Activar las API](https://console.cloud.google.com/flows/enableapi?apiid=classroom.googleapis.com,drive.googleapis.com,slides.googleapis.com)**.
+2. Comprueba que arriba, junto al logotipo de Google Cloud, está elegido el proyecto **Classroom MCP**.
+3. Pulsa **Siguiente** y después **Habilitar**.
+
+### C. Configura la pantalla de permisos
+
+1. Abre **[Google Auth Platform](https://console.cloud.google.com/auth/overview)** y pulsa **Comenzar**.
+2. **Nombre de la aplicación**: `Classroom MCP`. **Correo de asistencia**: el tuyo. Pulsa **Siguiente**.
+3. **Público**:
+   - Si aparece **Interno**, elígelo. Es lo mejor: la conexión no caduca y no hay que hacer el apartado D.
+   - Si no aparece (cuentas personales o algunos centros), elige **Externo**.
+4. Escribe tu correo de contacto, acepta la política y pulsa **Crear**.
+
+### D. Añádete como usuario de prueba (solo si elegiste «Externo»)
+
+1. Abre **[Público](https://console.cloud.google.com/auth/audience)**.
+2. Deja el estado en **Prueba**. No pulses «Publicar aplicación».
+3. En **Usuarios de prueba**, pulsa **Add users**, escribe tu propio correo y guarda.
+
+### E. Crea y descarga tu llave
+
+1. Abre **[Crear cliente](https://console.cloud.google.com/auth/clients/create)**.
+2. **Tipo de aplicación**: **App de escritorio**. *No* elijas «Aplicación web»: no funcionaría.
+3. **Nombre**: `Claude`. Deja sin marcar cualquier otra casilla. Pulsa **Crear**.
+4. En la ventana que aparece, pulsa **Descargar JSON**.
+
+Se guardará en tu carpeta **Descargas** un archivo llamado `client_secret_….json`. Esa es tu llave: **déjala en Descargas** y no la compartas con nadie.
+
+---
+
+## Paso 2. Instalar la extensión
+
+1. **[Descarga la extensión](https://github.com/vTanco/google-classroom-mcp/releases/latest/download/google-classroom-docentes.mcpb)** (archivo `google-classroom-docentes.mcpb`, unos 5 MB).
+2. Haz **doble clic** en el archivo. Se abrirá Claude Desktop con una ventana de instalación.
+3. Pulsa **Instalar**.
+
+> [!TIP]
+> Si el doble clic no abre Claude: abre Claude Desktop, ve a **Configuración → Extensiones** y arrastra el archivo a esa ventana.
+
+En la ventana de la extensión verás un campo opcional, **Llave de Google**. No hace falta rellenarlo si tu llave está en Descargas. Si la guardaste en otra carpeta, elígela ahí.
+
+---
+
+## Paso 3. Conectar tu cuenta
+
+Abre una **conversación nueva** en Claude y escribe:
+
+> Conecta Classroom
+
+Claude guardará una copia privada de tu llave y abrirá la página de Google en tu navegador:
+
+1. **Elige tu cuenta del centro.** Si el navegador entra con otra cuenta, copia la dirección de esa pestaña y ábrela en una ventana de incógnito.
+2. Si aparece «**Google no ha verificado esta aplicación**», es normal: la aplicación es tuya. Pulsa **Configuración avanzada** y después **Ir a Classroom MCP**.
+3. **Marca todas las casillas** de permisos y pulsa **Continuar**.
+4. Verás una página con el mensaje **«Classroom está conectado»**. Ciérrala y vuelve a Claude.
+
+Ya puedes borrar el archivo `client_secret_….json` de Descargas: Claude tiene su copia.
+
+---
+
+## Paso 4. Primera prueba
+
+Empieza por algo que solo lee:
+
+> Lista mis cursos de Classroom.
+
+Y después algo que no ve nadie:
+
+> Crea en [un curso de prueba] una tarea en borrador titulada «Prueba», con entrega el viernes a las 23:59.
+
+Ábrelo en Classroom, en la pestaña **Trabajo de clase**. Estará en **borrador**: ningún alumno lo ve. Bórralo a mano cuando quieras.
+
+Ideas para seguir en el [README](README.md#qué-puedes-pedirle).
+
+---
+
+## Otras formas de instalarlo
+
+### Con el asistente (Claude Code o sin Claude Desktop)
+
+El asistente hace contigo los pasos 1 a 3: abre cada página de Google, espera a que descargues la llave, conecta tu cuenta y lo añade a Claude Desktop y a Claude Code (guarda una copia de seguridad de tu configuración anterior).
+
+Necesitas **Node.js 22 o 24**: descárgalo de [nodejs.org](https://nodejs.org) (versión LTS) e instálalo. Después abre la **Terminal** (Mac) o **PowerShell** (Windows) y escribe:
+
+```bash
+npx -y google-classroom-mcp-docentes setup
+```
+
+Otros comandos útiles:
+
+| Comando | Para qué |
+|---|---|
+| `npx -y google-classroom-mcp-docentes auth` | Volver a iniciar sesión con Google |
+| `npx -y google-classroom-mcp-docentes doctor` | Comprobar que todo responde (no modifica nada) |
+
+> [!NOTE]
+> **Ordenadores del centro sin permisos de administrador**: en [nodejs.org](https://nodejs.org/es/download) elige el archivo comprimido (`.tar.gz` en Mac, `.zip` en Windows), descomprímelo en tu carpeta de usuario y usa la ruta completa, por ejemplo `~/node/bin/npx -y google-classroom-mcp-docentes setup`.
+
+### Desde el código
 
 ```bash
 git clone https://github.com/vTanco/google-classroom-mcp.git
 cd google-classroom-mcp
 npm ci --ignore-scripts
-npm run build
+npm run setup
 ```
 
-**Opción B — sin git:** en la página del repositorio pulsa **Code → Download ZIP**, descomprímelo en una carpeta que no vayas a mover (p. ej. `Documentos/google-classroom-mcp`; la carpeta del ZIP se llama `google-classroom-mcp-main`, puedes renombrarla), abre una Terminal en esa carpeta y ejecuta:
+Si tu `credentials.json` está en la carpeta del proyecto, se sigue usando ahí.
 
-```bash
-npm ci --ignore-scripts
-npm run build
-```
+---
 
-Apunta la **ruta completa** de esa carpeta; la necesitarás en el paso 5. En Mac la ves con `pwd`; en Windows, con `cd`.
+## Si algo falla
 
-## 3. Crear tu proyecto en Google Cloud 🌐
+Lo primero, pregúntale a Claude: **«¿Funciona la conexión con Classroom?»**. Te dirá qué falta y qué hacer.
 
-Esto crea tu propia «aplicación» de Google, que es lo que permite que el servidor hable con tu Classroom. Es gratuito y no hace falta tarjeta.
-
-> [!IMPORTANT]
-> Hazlo **con la misma cuenta de Google que usas en Classroom**. Si tienes varias cuentas abiertas, usa una **ventana de incógnito** e inicia sesión solo con esa.
-
-### 3.1 Crear el proyecto
-1. Entra en <https://console.cloud.google.com> y acepta las condiciones si te las pide.
-2. Arriba a la izquierda, en el **selector de proyectos**, pulsa **Nuevo proyecto**.
-3. Nombre: `Classroom MCP` → **Crear**. Comprueba que queda seleccionado arriba.
-
-> [!NOTE]
-> Puedes ignorar el aviso de «prueba gratuita de 300 $»: estas APIs son gratuitas.
-
-### 3.2 Activar las APIs
-Menú ☰ → **APIs y servicios → Biblioteca**. Busca y pulsa **Habilitar** en estas tres:
-- **Google Classroom API** (la del icono verde de Classroom; **no** la que se llama «Google Classroom MCP API»)
-- **Google Drive API**
-- **Google Slides API**
-
-### 3.3 Pantalla de consentimiento (Google Auth Platform)
-1. Menú ☰ → **APIs y servicios → Pantalla de consentimiento de OAuth** (o **Google Auth Platform**) → **Comenzar**.
-2. **Nombre de la aplicación:** `Classroom MCP`. **Correo de asistencia:** el tuyo.
-3. **Público:**
-   - Si aparece **Interno** (cuentas de centro educativo/empresa), elígelo: no caduca y no hace falta añadir usuarios de prueba.
-   - Si no aparece, elige **Externo**.
-4. Correo de contacto → acepta la política → **Crear**.
-5. **Solo si elegiste Externo:** ve a **Público**, deja el estado en **Prueba** (no elijas «En producción») y en **Usuarios de prueba → Add users** añade tu propio correo.
-
-> [!WARNING]
-> Si más adelante al autorizar te sale `Error 403: org_internal` aunque tu cuenta sea del mismo centro, ve a **Público → Marcar como externo → Prueba**. Ver [Solución de problemas](#7-solución-de-problemas-).
-
-### 3.4 Crear las credenciales (`credentials.json`)
-1. **Google Auth Platform → Clientes → + Crear cliente**.
-2. **Tipo de aplicación: App de escritorio** (*no* «Aplicación web»: no funcionaría).
-3. Nombre: `Claude`. Deja **sin marcar** «Use this client for an AI-powered agent». → **Crear**.
-4. Pulsa **Descargar JSON**.
-5. Mueve ese archivo a la carpeta del servidor y renómbralo a **`credentials.json`**:
-
-Mac:
-```bash
-mv ~/Downloads/client_secret_*.json /RUTA/DEL/SERVIDOR/credentials.json
-```
-
-Windows (PowerShell):
-```powershell
-Move-Item $HOME\Downloads\client_secret_*.json C:\RUTA\DEL\SERVIDOR\credentials.json
-```
-
-> [!CAUTION]
-> `credentials.json` es **tuyo**: no lo compartas. Cada docente debe crear el suyo.
-
-## 4. Autorizar tu cuenta de Google 🔑
-
-En la carpeta del servidor:
-
-```bash
-npm run auth
-```
-
-1. Se abrirá tu navegador predeterminado con la pantalla de Google.
-2. **Elige la cuenta de tu Classroom.**
-   - Si el navegador entra con otra cuenta: **copia la dirección completa** de esa pestaña, pégala en una **ventana de incógnito** e inicia sesión allí con la cuenta correcta. Funciona en cualquier navegador mientras la Terminal siga esperando.
-3. Si aparece «**Google no ha verificado esta aplicación**», es normal (la app es tuya): **Configuración avanzada → Ir a Classroom MCP**.
-4. **Acepta todos los permisos** (marca todas las casillas si las hay) → **Continuar**.
-5. En el navegador verás «Authentication successful» y en la Terminal:
-
-```
-OAuth connection verified; token saved locally.
-```
-
-Se habrá creado `token.json` en la carpeta (tu permiso; no lo compartas).
-
-Compruébalo sin tocar nada de tus cursos:
-
-```bash
-npm run doctor
-```
-
-Debe mostrar `Classroom API: OK` y `Drive API: OK`.
-
-> [!WARNING]
-> **No ejecutes `npm run auth` varias veces a la vez** (por ejemplo en varias pestañas): Google se lía y da error 500. Si te equivocas, cierra todas con `Ctrl + C` y lánzalo una sola vez.
-
-## 5. Conectarlo a Claude 🔌
-
-Necesitas dos rutas completas:
-- **Node:** en Mac `which node`, en Windows `where node` (p. ej. `/usr/local/bin/node` o `C:\Program Files\nodejs\node.exe`).
-- **Servidor:** la carpeta del paso 2 + `/dist/index.js`.
-
-### Claude Code
-
-```bash
-claude mcp add google-classroom --scope user -- /RUTA/A/node /RUTA/DEL/SERVIDOR/dist/index.js
-```
-
-Abre una **sesión nueva** de Claude Code y comprueba con `/mcp` que aparece `google-classroom` conectado.
-
-### Claude Desktop
-
-Abre **Configuración → Desarrollador → Editar configuración** (o edita directamente el archivo):
-- Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-Añade dentro de `"mcpServers"` (si el archivo está vacío, copia el bloque entero):
-
-```json
-{
-  "mcpServers": {
-    "google-classroom": {
-      "command": "/RUTA/A/node",
-      "args": ["/RUTA/DEL/SERVIDOR/dist/index.js"]
-    }
-  }
-}
-```
-
-En Windows usa barras dobles: `"C:\\Users\\tu_usuario\\Documents\\google-classroom-mcp\\dist\\index.js"`.
-
-**Cierra Claude Desktop del todo** (Cmd+Q / salir desde la bandeja) y vuelve a abrirlo.
-
-## 6. Primera prueba ✅
-
-En una conversación nueva, empieza por algo que solo lee:
-
-> Lista mis cursos activos de Classroom.
-
-Y después algo inofensivo:
-
-> Crea un borrador de tarea en [un curso de prueba] titulada «Prueba MCP», con entrega el viernes a las 23:59.
-
-Míralo en Classroom (pestaña **Trabajo de clase**): estará en **borrador**, sin que lo vea ningún alumno. Bórralo a mano cuando quieras.
-
-### Ideas de uso
-- «Crea el tema "Unidad 3: Electricidad" en los tres grupos de 1º y dentro una tarea "Práctica 1" de 10 puntos para el día 30.»
-- «Sube como material, en el tema STRUCTURES de cada grupo, el PDF *Vocabulario.pdf* de mi Drive.» *(con Google Drive para escritorio instalado, Claude encuentra el archivo y su ID en tu Mac).*
-- «Crea las prácticas 2 a 18 con la ficha de cada sesión como **copia para cada alumno**, en borrador, con entrega el día de su sesión.»
-- «Programa un anuncio para el lunes a las 8:00 recordando la entrega del proyecto.»
-- «Adjunta el documento de la actividad en **edición compartida** para que toda la clase trabaje en el mismo archivo.»
-
-## 7. Solución de problemas 🩺
-
-| Problema | Causa y solución |
+| Qué pasa | Por qué y qué hacer |
 |---|---|
-| `Error 403: org_internal` aunque tu cuenta sea del centro | La app está como «Interno» pero Google no la acepta (a veces pasa en cuentas educativas). **Público → Marcar como externo → Prueba** y vuelve a autorizar. Si Google dice que tu cuenta «no es apta» como usuario de prueba, ignóralo y prueba a autorizar igualmente: suele funcionar. |
-| `Error 403: access_denied` | Con «Externo», falta añadir tu correo en **Usuarios de prueba**. |
-| `Error 403: admin_policy_enforced` o «Esta app está bloqueada» | El administrador de Google Workspace de tu centro bloquea apps externas. Pídele que marque como **de confianza** tu ID de cliente (está en `credentials.json`, campo `client_id`) en *Consola de administración → Seguridad → Acceso y control de datos → Controles de API*. |
-| `Use a Desktop app OAuth client, not Web application credentials` | Creaste un cliente «Aplicación web». Crea otro de tipo **App de escritorio** (paso 3.4). |
-| `Required scopes are missing` | No aceptaste todos los permisos. Repite `npm run auth` marcando todas las casillas. |
-| `OAuth grant expired or revoked` / deja de funcionar tras unos días | Con la app en modo **Prueba**, Google retira el permiso a los **7 días**. Ejecuta `npm run auth` de nuevo (1 minuto). Con «Interno» no pasa. |
-| `Enable the requested Classroom or Drive API` | Falta habilitar alguna API (paso 3.2), en el **mismo proyecto** del `credentials.json`. |
-| Google muestra «500. Se trata de un error» | Varias autorizaciones abiertas a la vez. Cierra todas (`Ctrl + C`), cierra las pestañas de Google y `localhost`, y lanza `npm run auth` una sola vez. |
-| El navegador entra con la cuenta equivocada | Copia la URL de la pestaña de Google y ábrela en incógnito con la cuenta correcta (paso 4). |
-| Claude no ve las herramientas | Revisa las rutas absolutas de `node` y de `dist/index.js`, ejecuta `npm run build` y reinicia Claude (sesión nueva en Claude Code; salir del todo en Desktop). |
-| «Access denied… the Google project that created the post» al editar | Google solo deja modificar por API lo que se creó con **tu** proyecto de Google Cloud. Lo creado a mano en Classroom solo se edita a mano. |
-| No puedo añadir un archivo a una tarea ya publicada | Límite de la API de Classroom. Crea la publicación de nuevo con todos los adjuntos y borra la antigua a mano. |
+| Ha dejado de funcionar tras unos días | Con el público **Externo** en modo **Prueba**, Google pide volver a entrar cada **7 días**. Dile a Claude **«Reconecta Classroom»** (1 minuto). Con **Interno** no pasa. |
+| `Error 403: access_denied` | Elegiste **Externo** y falta añadir tu correo como usuario de prueba ([apartado D](#d-añádete-como-usuario-de-prueba-solo-si-elegiste-externo)). |
+| `Error 403: org_internal` aunque tu cuenta sea del centro | A veces pasa con cuentas educativas. En [Público](https://console.cloud.google.com/auth/audience) pulsa **Marcar como externo**, deja el estado en **Prueba**, añade tu correo en usuarios de prueba y vuelve a conectar. |
+| «Esta app está bloqueada» o `admin_policy_enforced` | El administrador de Google de tu centro bloquea aplicaciones externas. Pídele que marque como **de confianza** tu ID de cliente en *Consola de administración → Seguridad → Acceso y control de datos → Controles de API*. El ID está en [Clientes](https://console.cloud.google.com/auth/clients) (empieza por números y termina en `.apps.googleusercontent.com`). |
+| Claude dice que la llave es de tipo «Aplicación web» | Creaste el cliente equivocado. Crea otro de tipo **App de escritorio** ([apartado E](#e-crea-y-descarga-tu-llave)) y vuelve a pedir «Conecta Classroom». |
+| Claude dice que faltan permisos | No marcaste todas las casillas en la página de Google. Pide «Conecta Classroom» y márcalas todas. |
+| Claude dice que falta habilitar una API | Repite el [apartado B](#b-activa-classroom-drive-y-slides) con el proyecto correcto elegido arriba. |
+| Google muestra «500. Se trata de un error» | Había varias páginas de inicio de sesión abiertas a la vez. Cierra las pestañas de Google y vuelve a pedir «Conecta Classroom» una sola vez. |
+| No se abre el navegador | Claude te dará el enlace: cópialo y ábrelo en tu navegador. |
+| Claude no muestra la extensión | Revisa que esté activada en **Configuración → Extensiones** y abre una conversación nueva. |
+| «Access denied» al editar una tarea | Google solo deja modificar lo que se creó desde Claude. Lo creado a mano en Classroom se edita a mano. |
+| No puedo añadir un archivo a una tarea ya publicada | Límite de Google. Pide a Claude que cree la publicación de nuevo con todos los adjuntos y borra la antigua a mano. |
 
-¿Algo que no esté aquí? Abre un *issue* en el repositorio.
+¿Algo que no esté aquí? [Abre una consulta](https://github.com/vTanco/google-classroom-mcp/issues/new/choose) contando qué pasa. No pegues nunca tu llave ni el contenido de tus archivos de sesión.

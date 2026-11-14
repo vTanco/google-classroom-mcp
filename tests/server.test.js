@@ -25,7 +25,9 @@ test('tool schemas reject invalid calls before authentication', async t => {
   const [a, b] = InMemoryTransport.createLinkedPair();
   await server.run(a); await client.connect(b); t.after(() => client.close());
   const tools = (await client.listTools()).tools;
-  assert.equal(tools.length, 21);
+  assert.equal(tools.length, 26);
+  const readOnly = name => tools.find(tool => tool.name === name).annotations.readOnlyHint;
+  assert.deepEqual(['classroom_status', 'classroom_connect', 'classroom_get_overview', 'drive_search_files', 'classroom_copy_post'].map(readOnly), [true, false, true, true, false]);
   assert(tools.some(tool => tool.name === 'drive_upload_file'));
   for (const [name, args] of [
     ['classroom_delete_course', { courseId: 'test' }],
@@ -44,6 +46,19 @@ test('tool schemas reject invalid calls before authentication', async t => {
     ['classroom_patch_material', { courseId: 'test', id: 'x', updateMask: 'state,state', state: 'DRAFT' }],
     ['classroom_patch_material', { courseId: 'test', id: 'x', updateMask: 'ownerId', ownerId: 'x' }],
     ['classroom_update_course', { courseId: 'test' }],
+    ['drive_upload_file', { name: 'x' }],
+    ['drive_upload_file', { base64Content: 'eA==' }],
+    ['drive_upload_file', { name: 'x', base64Content: 'eA==', localPath: '/tmp/x' }],
+    ['drive_upload_file', { localPath: 'relative/file.pdf' }],
+    ['drive_upload_file', { localPath: '/definitely/not/here.pdf' }],
+    ['drive_search_files', { type: 'music' }],
+    ['drive_search_files', { folderId: "x' or '1" }],
+    ['classroom_create_assignment', { courseId: 'test', title: 'x', workType: 'MULTIPLE_CHOICE_QUESTION' }],
+    ['classroom_create_assignment', { courseId: 'test', title: 'x', workType: 'MULTIPLE_CHOICE_QUESTION', choices: ['a', 'a'] }],
+    ['classroom_create_assignment', { courseId: 'test', title: 'x', choices: ['a', 'b'] }],
+    ['classroom_copy_post', { sourceCourseId: 'a', id: 'x', kind: 'announcement', targetCourseIds: ['b'] }],
+    ['classroom_copy_post', { sourceCourseId: 'a', id: 'x', kind: 'material', targetCourseIds: [] }],
+    ['classroom_get_overview', { daysAhead: 0 }],
     ['drive_upload_file', { name: 'x', base64Content: 'broken' }],
     ['drive_upload_file', { name: 'x', base64Content: 'Zh==' }],
     ['drive_upload_file', { name: 'x', base64Content: 'eA==', mimeType: 'text/plain\r\nX: bad' }],
