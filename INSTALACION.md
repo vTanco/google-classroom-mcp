@@ -23,8 +23,7 @@ Vas a hacer tres cosas:
 - **Claude Desktop** instalado ([descárgalo aquí](https://claude.ai/download)).
 - Tu **cuenta de Google del centro**, la misma con la que entras en Classroom.
 
-> [!TIP]
-> Si tienes varias cuentas de Google abiertas en el navegador (personal y del centro), haz el paso 1 en una **ventana de incógnito** y entra solo con la del centro. Así no te equivocarás de cuenta.
+> **Consejo:** Si tienes varias cuentas de Google abiertas en el navegador (personal y del centro), haz el paso 1 en una **ventana de incógnito** y entra solo con la del centro. Así no te equivocarás de cuenta.
 
 ---
 
@@ -40,8 +39,7 @@ Cada apartado tiene un **enlace directo** a la pantalla que necesitas.
 2. En **Nombre del proyecto** escribe `Classroom MCP`.
 3. Pulsa **Crear** y espera unos segundos a que termine.
 
-> [!NOTE]
-> Si aparece una oferta de «prueba gratuita de 300 $», ignórala: lo que vas a usar es gratis siempre.
+> **Nota:** Si aparece una oferta de «prueba gratuita de 300 $», ignórala: lo que vas a usar es gratis siempre.
 
 ### B. Activa Classroom, Drive y Slides
 
@@ -81,8 +79,7 @@ Se guardará en tu carpeta **Descargas** un archivo llamado `client_secret_….j
 2. Haz **doble clic** en el archivo. Se abrirá Claude Desktop con una ventana de instalación.
 3. Pulsa **Instalar**.
 
-> [!TIP]
-> Si el doble clic no abre Claude: abre Claude Desktop, ve a **Configuración → Extensiones** y arrastra el archivo a esa ventana.
+> **Consejo:** Si el doble clic no abre Claude: abre Claude Desktop, ve a **Configuración → Extensiones** y arrastra el archivo a esa ventana.
 
 En la ventana de la extensión verás un campo opcional, **Llave de Google**. No hace falta rellenarlo si tu llave está en Descargas. Si la guardaste en otra carpeta, elígela ahí.
 
@@ -140,8 +137,7 @@ Otros comandos útiles:
 | `npx -y google-classroom-mcp-docentes auth` | Volver a iniciar sesión con Google |
 | `npx -y google-classroom-mcp-docentes doctor` | Comprobar que todo responde (no modifica nada) |
 
-> [!NOTE]
-> **Ordenadores del centro sin permisos de administrador**: en [nodejs.org](https://nodejs.org/es/download) elige el archivo comprimido (`.tar.gz` en Mac, `.zip` en Windows), descomprímelo en tu carpeta de usuario y usa la ruta completa, por ejemplo `~/node/bin/npx -y google-classroom-mcp-docentes setup`.
+> **Ordenadores del centro sin permisos de administrador:** en [nodejs.org](https://nodejs.org/es/download) elige el archivo comprimido (`.tar.gz` en Mac, `.zip` en Windows), descomprímelo en tu carpeta de usuario y usa la ruta completa, por ejemplo `~/node/bin/npx -y google-classroom-mcp-docentes setup`.
 
 ### Desde el código
 

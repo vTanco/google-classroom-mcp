@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="356" viewBox="0 0 960 356" role="img" aria-label="Funciones: tareas y preguntas, fichas para cada alumno, copiar a otros grupos, resumen de pendientes, subir archivos del ordenador y anuncios programados">
+  <defs>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fbbc04"/><stop offset="1" stop-color="#f28b54"/>
+    </linearGradient>
+  </defs>
+  <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+    <g fill="#ffffff" stroke="#d6e2db">
+      <rect x="8" y="8" width="304" height="164" rx="16"/><rect x="328" y="8" width="304" height="164" rx="16"/><rect x="648" y="8" width="304" height="164" rx="16"/>
+      <rect x="8" y="184" width="304" height="164" rx="16"/><rect x="328" y="184" width="304" height="164" rx="16"/><rect x="648" y="184" width="304" height="164" rx="16"/>
+    </g>
+    <g fill="#e7f3ec">
+      <rect x="28" y="28" width="52" height="52" rx="14"/><rect x="348" y="28" width="52" height="52" rx="14"/><rect x="668" y="28" width="52" height="52" rx="14"/>
+      <rect x="28" y="204" width="52" height="52" rx="14"/><rect x="348" y="204" width="52" height="52" rx="14"/><rect x="668" y="204" width="52" height="52" rx="14"/>
+    </g>
+    <g stroke="#14532d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- tareas: checklist -->
+      <rect x="40" y="38" width="28" height="32" rx="4"/><path d="M47 50l4 4 8-8M47 62h14"/>
+      <!-- fichas: stacked documents -->
+      <path d="M366 42h18l6 6v24h-24z"/><path d="M360 48v28h22"/><path d="M371 58h12M371 64h8"/>
+      <!-- copiar: arrows to groups -->
+      <rect x="678" y="40" width="14" height="14" rx="3"/><rect x="698" y="56" width="12" height="12" rx="3"/><rect x="678" y="60" width="12" height="12" rx="3"/><path d="M692 47h8a4 4 0 0 1 4 4v5M686 54v6"/>
+      <!-- pendiente: calendar -->
+      <rect x="39" y="216" width="30" height="28" rx="4"/><path d="M39 225h30M47 212v8M61 212v8M47 233h4M57 233h4M47 239h4"/>
+      <!-- subir: upload -->
+      <path d="M374 238v-24M364 222l10-10 10 10M360 238v6h28v-6"/>
+      <!-- anuncios: bell -->
+      <path d="M684 240v-10a10 10 0 0 1 20 0v10l3 4h-26zM690 248a4 4 0 0 0 8 0"/>
+    </g>
+    <g font-size="18" font-weight="700" fill="#0b3d2e">
+      <text x="28" y="112">Tareas y preguntas</text><text x="348" y="112">Fichas para cada alumno</text><text x="668" y="112">Copia a otros grupos</text>
+      <text x="28" y="288">¿Qué tengo pendiente?</text><text x="348" y="288">Archivos de tu ordenador</text><text x="668" y="288">Anuncios programados</text>
+    </g>
+    <g font-size="14.5" fill="#475569">
+      <text x="28" y="138">Puntos y fecha en tu hora.</text><text x="28" y="158">Preguntas tipo test o cortas.</text>
+      <text x="348" y="138">Adjunta de Drive en copia</text><text x="348" y="158">individual o edición compartida.</text>
+      <text x="668" y="138">Una unidad en todos tus</text><text x="668" y="158">grupos, cada una en su tema.</text>
+      <text x="28" y="314">Borradores, programados y</text><text x="28" y="334">entregas de todos tus cursos.</text>
+      <text x="348" y="314">Sube PDF, Word o vídeo y</text><text x="348" y="334">conviértelo a formato Google.</text>
+      <text x="668" y="314">Avisos que se publican solos</text><text x="668" y="334">el día y la hora que digas.</text>
+    </g>
+    <g fill="url(#accent)">
+      <rect x="28" y="88" width="28" height="4" rx="2"/><rect x="348" y="88" width="28" height="4" rx="2"/><rect x="668" y="88" width="28" height="4" rx="2"/>
+      <rect x="28" y="264" width="28" height="4" rx="2"/><rect x="348" y="264" width="28" height="4" rx="2"/><rect x="668" y="264" width="28" height="4" rx="2"/>
+    </g>
+  </g>
+</svg>

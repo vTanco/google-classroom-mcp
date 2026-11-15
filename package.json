@@ -1,6 +1,6 @@
 {
   "name": "google-classroom-mcp-docentes",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Servidor MCP de Google Classroom para docentes: prepara tareas, materiales, temas y anuncios hablando con Claude. Instalación guiada y conexión desde el chat.",
   "type": "module",
   "bin": {

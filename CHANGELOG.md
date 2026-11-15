@@ -8,6 +8,12 @@
 - **Modo de los adjuntos de Drive:** nuevo campo `shareMode` (`VIEW`, `EDIT`, `STUDENT_COPY` en tareas; `VIEW`, `EDIT` en materiales).
 - Scripts con `npm` en lugar de `bun`; dependencias actualizadas (`npm audit`: 0 vulnerabilidades).
 
+## 3.1.1 (2026-11-15)
+
+- README más visual: conversación de ejemplo, funciones, instalación en tres pasos y diagrama de privacidad como ilustraciones propias. Se muestra igual en GitHub y en npm.
+- Nuevas secciones «Novedades de la versión 3.1» y «Fiabilidad».
+- Sin avisos de GitHub (`[!NOTE]`), que npm mostraba como texto suelto.
+
 ## 3.1.0 (2026-11-13)
 
 Pensada para docentes sin experiencia técnica.
